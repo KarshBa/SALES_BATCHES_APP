@@ -33,16 +33,11 @@ const els = {
 
   // bulk controls
   bulkRecordType:    document.getElementById('bulkRecordType'),
-  applyRecordType:   document.getElementById('applyRecordType'),
   bulkPromoPrice:    document.getElementById('bulkPromoPrice'),
-  applyPromoPriceAll:document.getElementById('applyPromoPriceAll'),
   bulkPromoQty:      document.getElementById('bulkPromoQty'),
-  applyPromoQtyAll:  document.getElementById('applyPromoQtyAll'),
-  applyPromoQtyEmpty:document.getElementById('applyPromoQtyEmpty'),
   bulkStartDate:     document.getElementById('bulkStartDate'),
-  applyStartDateAll: document.getElementById('applyStartDateAll'),
   bulkEndDate:       document.getElementById('bulkEndDate'),
-  applyEndDateAll:   document.getElementById('applyEndDateAll')
+  btnBulkUPC:        document.getElementById('btnBulkUPC')
 };
 
 // Modals
@@ -242,49 +237,86 @@ els.linesTbody.addEventListener('click', e=>{
   }
 });
 
-/* ---------- Bulk Apply ---------- */
-els.applyRecordType.addEventListener('click', ()=>{
+/* ---------- Auto Bulk Apply (no buttons) ---------- */
+function autoDebounce(fn, wait=60){
+  let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), wait); };
+}
+
+const applyRecordTypeAll = () => {
   const v = els.bulkRecordType.value;
   if(!v) return;
   const b = getCurrentBatch();
-  b.lines.forEach(l=> l.recordType = v);
+  b.lines.forEach(l => l.recordType = v);
   scheduleSave(b); renderLines();
-});
-els.applyPromoPriceAll.addEventListener('click', ()=>{
+};
+els.bulkRecordType.addEventListener('change', applyRecordTypeAll);
+
+const applyPromoPriceAll = autoDebounce(() => {
   const v = els.bulkPromoPrice.value;
-  if(v==='') return;
+  if(v === '') return;
   const b = getCurrentBatch();
-  b.lines.forEach(l=> l.promoPrice = v);
+  b.lines.forEach(l => l.promoPrice = v);
   scheduleSave(b); renderLines();
 });
-els.applyPromoQtyAll.addEventListener('click', ()=>{
+els.bulkPromoPrice.addEventListener('input', applyPromoPriceAll);
+
+const applyPromoQtyAll = autoDebounce(() => {
   const v = els.bulkPromoQty.value;
-  if(v==='') return;
+  if(v === '') return;
   const b = getCurrentBatch();
-  b.lines.forEach(l=> l.promoQty = v);
+  b.lines.forEach(l => l.promoQty = v);
   scheduleSave(b); renderLines();
 });
-els.applyPromoQtyEmpty.addEventListener('click', ()=>{
-  const v = els.bulkPromoQty.value;
-  if(v==='') return;
-  const b = getCurrentBatch();
-  b.lines.forEach(l=> { if(!l.promoQty) l.promoQty = v; });
-  scheduleSave(b); renderLines();
-});
-els.applyStartDateAll.addEventListener('click', ()=>{
+els.bulkPromoQty.addEventListener('input', applyPromoQtyAll);
+
+els.bulkStartDate.addEventListener('change', () => {
   const v = els.bulkStartDate.value;
   if(!v) return;
   const b = getCurrentBatch();
-  b.lines.forEach(l=> l.startDate = v);
+  b.lines.forEach(l => l.startDate = v);
   scheduleSave(b); renderLines();
 });
-els.applyEndDateAll.addEventListener('click', ()=>{
+
+els.bulkEndDate.addEventListener('change', () => {
   const v = els.bulkEndDate.value;
   if(!v) return;
   const b = getCurrentBatch();
-  b.lines.forEach(l=> l.endDate = v);
+  b.lines.forEach(l => l.endDate = v);
   scheduleSave(b); renderLines();
 });
+
+/* ---------- Bulk UPC Add ---------- */
+if(els.btnBulkUPC){
+  els.btnBulkUPC.addEventListener('click', () => {
+    const ta = document.getElementById('bulkUpcInput');
+    if(ta) ta.value = '';
+    openModal(modalBulkUPC);
+  });
+
+  document.getElementById('confirmBulkUPC').addEventListener('click', () => {
+    const ta = document.getElementById('bulkUpcInput');
+    if(!ta) { closeModal(modalBulkUPC); return; }
+    const txt = ta.value;
+    const tokens = txt.split(/[\s,]+/).map(t=>t.trim()).filter(Boolean);
+    if(!tokens.length){ closeModal(modalBulkUPC); return; }
+    const b = getCurrentBatch();
+    tokens.forEach(upc=>{
+      const line = blankLine();
+      line.recordType = els.bulkRecordType.value || 'SALE';
+      line.upc = upc.replace(/\D/g,'');
+      if(masterItems && masterItems.has(line.upc)){
+        const itm = masterItems.get(line.upc);
+        line.brand = itm.brand;
+        line.description = itm.description;
+        line.regPrice = itm.reg_price;
+      }
+      b.lines.push(line);
+    });
+    scheduleSave(b);
+    closeModal(modalBulkUPC);
+    renderLines();
+  });
+}
 
 /* ---------- Add Lines (optional button) ---------- */
 if(els.btnAddLines){
