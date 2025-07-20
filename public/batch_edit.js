@@ -347,11 +347,12 @@ if(els.btnAddLines){
 }
 
 /* ---------- Validation / Export ---------- */
-els.btnValidate.addEventListener('click', ()=>{
-  const issues = collectValidation(getCurrentBatch());
-  showIssues(issues);
-});
-
+if (els.btnValidate) {
+  els.btnValidate.addEventListener('click', () => {
+    const issues = collectValidation(getCurrentBatch());
+    showIssues(issues);
+  });
+}
 function showIssues(issues){
   issuesList.innerHTML = issues.length ? issues.map(i=>`<li>${escapeHtml(i)}</li>`).join('') : '<li>No issues 🎉</li>';
   openModal(modalIssues);
@@ -384,6 +385,7 @@ function downloadCSV(text, filename){
   URL.revokeObjectURL(a.href);
 }
 
+if (els.btnExport) {
 els.btnExport.addEventListener('click', ()=>{
   const b = getCurrentBatch();
   const issues = collectValidation(b);
@@ -398,6 +400,7 @@ els.btnExport.addEventListener('click', ()=>{
   openModal(modalCsvPreview);
   toast('Exported','success');
 });
+}
 
 /* ---------- Filtering ---------- */
 els.lineFilter.addEventListener('input', renderLines);
