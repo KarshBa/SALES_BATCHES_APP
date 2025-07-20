@@ -2,7 +2,8 @@ import express from 'express';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { parse } from 'csv-parse/sync';          // if not already imported here
+import { parse } from 'csv-parse/sync';
+import fetch from 'node-fetch';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
@@ -10,14 +11,19 @@ const __dirname  = path.dirname(__filename);
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
-const DATA_DIR        = path.join(__dirname, 'data');
-const BATCHES_PATH    = path.join(DATA_DIR, 'batches.json');
-const MASTER_JSON_PATH = path.join(DATA_DIR, 'master_items.json');
+const DATA_DIR         = path.join(__dirname, 'data');
+const BATCHES_PATH     = path.join(DATA_DIR, 'batches.json');
 
-/* Remote CSV (same as Inventory Counts pattern) */
-// Set this in Render: MASTER_SOURCE_URL="https://item-list-handler.onrender.com/item_list.csv"
-// (fallback to legacy ITEM_CSV_URL if you already set that)
-const MASTER_SOURCE_URL = process.env.MASTER_SOURCE_URL || process.env.ITEM_CSV_URL;
+// raw CSV copy lives alongside JSON so you can peek at it if needed
+const MASTER_CSV_PATH  = path.join(DATA_DIR, 'item_list.csv');
+// JSON is served from /public/data so the browser can fetch it directly
+const MASTER_JSON_PATH = path.join(__dirname, 'public', 'data', 'master_items.json');
+
+// Remote CSV – default to Item‑List‑Handler endpoint
+const MASTER_SOURCE_URL =
+  process.env.MASTER_SOURCE_URL ||
+  process.env.ITEM_CSV_URL      ||
+  'https://item-list-handler.onrender.com/item_list.csv';
 
 let masterItemsMap = new Map();   // in‑memory UPC → item
 let masterRefreshTimer = null;
@@ -132,10 +138,24 @@ app.post('/api/refresh-master-items', async (req,res)=>{
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// --- API: master (served static but add a HEAD/GET existence check) ----
-app.get('/data/master_items.json', (_req,res)=>{
-  if(!fs.existsSync(MASTER_ITEMS)) return res.status(500).json({error:'master list missing'});
-  res.sendFile(MASTER_ITEMS);
+//  ➜ JSON for the browser
+app.get('/data/master_items.json', (_req,res) => {
+  if(!fs.existsSync(MASTER_JSON_PATH))
+    return res.status(404).json({error:'master_items.json missing'});
+  res.setHeader('Cache-Control','no-store');
+  res.sendFile(MASTER_JSON_PATH);
+});
+
+//  ➜ single‑item look‑up (used by batch validator if you want)
+app.get('/api/item/:upc', (req,res)=>{
+  const code = normalizeUPC(req.params.upc||'');
+  res.json(masterItemsMap.get(code) || {});
+});
+
+//  ➜ manual refresh (called by Item‑List‑Handler or a button)
+app.post('/api/refresh-master-items', async (_req,res)=>{
+  await refreshMasterItems('manual');
+  res.json({size: masterItemsMap.size, at: new Date().toISOString()});
 });
 
 // --- API: batches CRUD --------------------------------------------
@@ -175,6 +195,82 @@ app.delete('/api/batches/:id', (req,res)=>{
     res.json({success:true});
   }catch(e){ res.status(500).json({error:e.message}); }
 });
+
+//--------------------------------------------------------------------
+// CSV ➜ JSON helpers  (same logic the Inventory‑Counts app uses)
+//--------------------------------------------------------------------
+const pick = (row, aliases) => {
+  for (const k of Object.keys(row)) {
+    const low = k.toLowerCase().trim();
+    if (aliases.includes(low)) return row[k];
+  }
+  return '';
+};
+const normalizeUPC = s => {
+  let d = String(s||'').replace(/\D/g,'');
+  if (!d) return '';
+  if (d.length === 12) d = d.slice(0,11);   // drop UPC‑A check digit
+  return d.padStart(13,'0');
+};
+function parseMasterCsv(csvText){
+  const rows = parse(csvText,{columns:true,skip_empty_lines:true});
+  const map  = new Map();
+  rows.forEach(r=>{
+    const upc = normalizeUPC(pick(r,['main code','code','item code','upc']));
+    if(!upc) return;
+    map.set(upc,{
+      upc,
+      brand      : pick(r,['main item-brand','brand']),
+      description: pick(r,['main item-description','description']),
+      reg_price  : parseFloat(pick(r,['price-regular-price','price','regular price'])) || 0
+    });
+  });
+  return map;
+}
+
+// keep map in memory so look‑ups are fast
+let masterItemsMap = new Map();
+let refreshTimer   = null;
+
+async function refreshMasterItems(source='auto'){
+  if(!MASTER_SOURCE_URL) return;
+  const tag = source==='manual' ? 'Manual-refresh' : 'Auto-refresh';
+  try{
+    const res = await fetch(MASTER_SOURCE_URL,{timeout:15000});
+    if(!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+    const csv = await res.text();
+    fs.mkdirSync(DATA_DIR,{recursive:true});
+    fs.writeFileSync(MASTER_CSV_PATH, csv);
+
+    masterItemsMap = parseMasterCsv(csv);
+
+    fs.mkdirSync(path.dirname(MASTER_JSON_PATH),{recursive:true});
+    fs.writeFileSync(
+      MASTER_JSON_PATH,
+      JSON.stringify([...masterItemsMap.values()],null,2)
+    );
+    console.log(`[${tag}] downloaded ${masterItemsMap.size.toLocaleString()} items`);
+  }catch(err){
+    console.warn(`[${tag}] failed – keeping existing list:`, err.message);
+  }
+}
+
+/* ---------- initial load ---------- */
+try{
+  if(fs.existsSync(MASTER_JSON_PATH)){
+    masterItemsMap = new Map(
+      JSON.parse(fs.readFileSync(MASTER_JSON_PATH,'utf8')).map(o=>[o.upc,o])
+    );
+    console.log(`[Startup] loaded ${masterItemsMap.size} items from disk`);
+  }else{
+    await refreshMasterItems('manual');
+  }
+}catch(e){ console.warn('[Startup] master load failed:', e.message); }
+
+/* ---------- hourly cron ---------- */
+if(!refreshTimer){
+  refreshTimer = setInterval(()=>refreshMasterItems('auto'), 60*60*1000);
+}
 
 // Root -> batches list
 app.get('/', (_req,res) =>
