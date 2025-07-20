@@ -130,11 +130,11 @@ function validateLine(line, index){
   }
 
   /* UPC ------------------------------------------------------------ */
-  if (!upc) {
-    issues.push(`Line ${index+1}: UPC missing`);
-  } else if (masterItems && !masterItems.has(upc)) {
-    issues.push(`Line ${index+1}: UPC not in master list`);
-  }
+  if (!upc){
+   issues.push(`Line ${index+1}: UPC missing`);
+ } else if (masterItems && !masterItems.has(upc)){
+   issues.push(`Line ${index+1}: UPC not in master list`);
+ }
 
   /* Promo‐related fields ------------------------------------------ */
   const needsPromo = rt && rt !== 'REG';
@@ -227,7 +227,7 @@ els.linesTbody.addEventListener('input', e=>{
   else if(e.target.classList.contains('cell-upc')) {
     line.upc = e.target.value.replace(/\D/g,'');
     if(masterItems && line.upc.length >= 12){
-      cconst item = masterItems.get(canonUPC(line.upc));
+      const item = masterItems.get(canonUPC(line.upc));
       if(item){
         line.brand = item.brand;
         line.description = item.description;
