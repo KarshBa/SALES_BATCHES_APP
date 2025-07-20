@@ -72,10 +72,14 @@ app.delete('/api/batches/:id', (req,res)=>{
   }catch(e){ res.status(500).json({error:e.message}); }
 });
 
-// SPA fallback (optional if you deep link)
-app.get('*', (req,res,next)=>{
-  if (req.path.startsWith('/api/')) return next();
-  return res.sendFile(path.join(__dirname,'public','sales_batches.html'));
-});
+// Root -> batches list
+app.get('/', (_req,res) =>
+  res.sendFile(path.join(__dirname,'public','batches.html'))
+);
+// Explicit edit page already served by static (sales_batches.html)
+// Optional deep link safeguard:
+app.get(['/sales_batches','/sales_batches.html'], (_req,res)=>
+  res.sendFile(path.join(__dirname,'public','sales_batches.html'))
+);
 
 app.listen(PORT, ()=>console.log(`Price Change Batch Builder running on :${PORT}`));
