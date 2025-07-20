@@ -106,7 +106,9 @@ app.delete('/api/batches/:id', (req,res)=>{
 //--------------------------------------------------------------------
 const pick = (row, aliases) => {
   for (const k of Object.keys(row)) {
-    const low = k.toLowerCase().trim();
+    const low = k.replace(/^"+|"+$/g, '')
+                 .toLowerCase()
+                 .trim();
     if (aliases.includes(low)) return row[k];
   }
   return '';
