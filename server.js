@@ -3,7 +3,6 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { parse } from 'csv-parse/sync';          // if not already imported here
-import fetch from 'node-fetch';                  // ensure present (some files already have it)
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
