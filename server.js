@@ -63,6 +63,12 @@ app.post('/api/refresh-master-items', async (_req,res)=>{
   res.json({size: masterItemsMap.size, at: new Date().toISOString()});
 });
 
+// 💡 alias so Item‑List‑Handler (and any other tools) can POST to same path
+app.post('/api/refresh-items', async (_req, res) => {
+  await refreshMasterItems('manual');
+  res.json({ size: masterItemsMap.size, at: new Date().toISOString() });
+});
+
 // --- API: batches CRUD --------------------------------------------
 app.get('/api/batches', (_req,res)=>{
   try { res.json(readJSON(BATCHES_PATH)); }
