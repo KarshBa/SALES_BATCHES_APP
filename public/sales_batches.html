@@ -165,6 +165,22 @@
     body { background: #fff; }
     table.edit-table { font-size: 11px; }
   }
+button,                     
+a.button-link {              
+  display: inline-block;
+  padding: .55rem .85rem;
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+  border-radius: 4px;
+  border: none;
+  background: var(--secondary, #e0e0e0);  /* fall back if --secondary unset */
+  color: #000;
+  text-decoration: none;
+}
+a.button-link:hover {
+  background: #d1d1d1;       /* match your hover for .secondary buttons */
+}
 </style>
 </head>
 <body>
