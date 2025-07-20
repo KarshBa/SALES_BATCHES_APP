@@ -119,6 +119,7 @@ const normalizeUPC = s => {
 };
 function parseMasterCsv(csvText){
   const rows = parse(csvText,{columns:true,skip_empty_lines:true});
+  if (rows.length) console.log('[parseMasterCsv] headers:', Object.keys(rows[0]));
   const map  = new Map();
   rows.forEach(r=>{
     const upc = normalizeUPC(
