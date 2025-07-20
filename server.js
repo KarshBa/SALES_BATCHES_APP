@@ -75,7 +75,7 @@ app.delete('/api/batches/:id', (req,res)=>{
 // SPA fallback (optional if you deep link)
 app.get('*', (req,res,next)=>{
   if (req.path.startsWith('/api/')) return next();
-  return res.sendFile(path.join(__dirname,'public','index.html'));
+  return res.sendFile(path.join(__dirname,'public','sales_batches.html'));
 });
 
 app.listen(PORT, ()=>console.log(`Price Change Batch Builder running on :${PORT}`));
