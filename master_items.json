@@ -1,0 +1,12 @@
+[
+  { "upc": "0020111100000", "brand": "ACME",    "description": "Gala Apples 1lb",       "reg_price": 3.49 },
+  { "upc": "0020111200000", "brand": "ACME",    "description": "Bananas Organic",       "reg_price": 0.99 },
+  { "upc": "0020111300000", "brand": "ACME",    "description": "Strawberries 16oz",     "reg_price": 4.99 },
+  { "upc": "0001234567890", "brand": "FARMSCO", "description": "Whole Milk 1gal",       "reg_price": 5.29 },
+  { "upc": "0001234567891", "brand": "FARMSCO", "description": "2% Milk 1gal",          "reg_price": 5.09 },
+  { "upc": "0000000001111", "brand": "SNACKIT", "description": "Trail Mix 10oz",        "reg_price": 6.49 },
+  { "upc": "0000000002222", "brand": "SNACKIT", "description": "Granola Bars 6ct",      "reg_price": 3.99 },
+  { "upc": "0000000003333", "brand": "SNACKIT", "description": "Salted Peanuts 16oz",   "reg_price": 2.79 },
+  { "upc": "0000000004444", "brand": "SNACKIT", "description": "BBQ Chips 8oz",         "reg_price": 3.49 },
+  { "upc": "0000000005555", "brand": "HYDRATE", "description": "Spring Water 24pk",     "reg_price": 5.99 }
+]

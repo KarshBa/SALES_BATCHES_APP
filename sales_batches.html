@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Price Change Batch Builder</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="app-header">
+  <h1>Price Change Batch Builder</h1>
+  <div class="header-actions">
+    <span id="currentBatchLabel" class="badge" aria-live="polite">No batch selected</span>
+    <button id="btnNew">Create New Batch</button>
+    <button id="btnDuplicate" disabled>Duplicate Batch</button>
+    <button id="btnDelete" disabled>Delete Batch</button>
+    <button id="btnBack" class="hidden">Back to Batch List</button>
+    <button id="btnExport" disabled>Export CSV</button>
+  </div>
+</header>
+
+<main id="appMain">
+  <!-- Batch List View -->
+  <section id="batchListView">
+    <div class="list-toolbar">
+      <input type="search" id="batchSearch" placeholder="Filter batches..." aria-label="Filter batches">
+    </div>
+    <table class="table batches-table">
+      <thead>
+        <tr>
+          <th>Name</th><th>Lines</th><th>Updated</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="batchesTbody"></tbody>
+    </table>
+  </section>
+
+  <!-- Batch Editing View -->
+  <section id="batchEditView" class="hidden">
+    <div class="bulk-bar">
+      <div class="bulk-field">
+        <label>Record Type</label>
+        <select id="bulkRecordType">
+          <option value="">(pick)</option>
+          <option>SALE</option>
+          <option>TPR</option>
+          <option>INSTORE</option>
+          <option>REG</option>
+        </select>
+        <button id="applyRecordType">Apply All</button>
+      </div>
+      <div class="bulk-field">
+        <label>Promo Price</label>
+        <input type="number" id="bulkPromoPrice" step="0.01" min="0">
+        <button id="applyPromoPriceAll">Apply All</button>
+      </div>
+      <div class="bulk-field">
+        <label>Promo Qty</label>
+        <input type="number" id="bulkPromoQty" min="1">
+        <button id="applyPromoQtyEmpty">Apply Empty</button>
+        <button id="applyPromoQtyAll">Apply All</button>
+      </div>
+      <div class="bulk-field">
+        <label>Start Date</label>
+        <input type="date" id="bulkStartDate">
+        <button id="applyStartDateAll">Apply All</button>
+      </div>
+      <div class="bulk-field">
+        <label>End Date</label>
+        <input type="date" id="bulkEndDate">
+        <button id="applyEndDateAll">Apply All</button>
+      </div>
+      <div class="bulk-field">
+        <label>&nbsp;</label>
+        <button id="btnBulkUPC">Bulk UPC Add</button>
+      </div>
+      <div class="bulk-field">
+        <label>&nbsp;</label>
+        <button id="btnRecalc">Recalculate</button>
+      </div>
+      <div class="bulk-field stretch">
+        <label>Search</label>
+        <input type="search" id="lineFilter" placeholder="Filter lines (UPC / text)">
+      </div>
+    </div>
+
+    <div class="table-wrapper">
+      <table class="table edit-table" id="linesTable">
+        <thead>
+          <tr>
+            <th>Record Type</th>
+            <th>UPC</th>
+            <th>Brand</th>
+            <th>Description</th>
+            <th>Reg_Price</th>
+            <th>Promo_Price</th>
+            <th>PromoQTY</th>
+            <th>Start_Date</th>
+            <th>End_Date</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="linesTbody"></tbody>
+      </table>
+    </div>
+    <div class="controls-bar">
+      <button id="btnAddLines">+ Add Lines</button>
+      <button id="btnValidate">Validate</button>
+      <span id="statusSummary"></span>
+    </div>
+  </section>
+</main>
+
+<!-- Modals -->
+<div id="modalOverlay" class="overlay hidden" aria-hidden="true"></div>
+
+<div class="modal hidden" id="modalNewBatch" role="dialog" aria-modal="true" aria-labelledby="modalNewBatchTitle">
+  <h2 id="modalNewBatchTitle">Create New Batch</h2>
+  <label>Batch Name <input type="text" id="newBatchName" placeholder="WeekendAd_2025_07_26"></label>
+  <div class="modal-actions">
+    <button id="createBatchConfirm">Create</button>
+    <button class="close-modal" data-close="#modalNewBatch">Cancel</button>
+  </div>
+</div>
+
+<div class="modal hidden" id="modalAddLines">
+  <h2>Add Lines</h2>
+  <label>How many? (1–50)
+    <input type="number" id="numNewLines" min="1" max="50" value="1">
+  </label>
+  <div class="modal-actions">
+    <button id="confirmAddLines">Add</button>
+    <button class="close-modal" data-close="#modalAddLines">Cancel</button>
+  </div>
+</div>
+
+<div class="modal hidden" id="modalBulkUPC">
+  <h2>Bulk UPC Add</h2>
+  <p>Paste UPCs (comma / newline separated). Unknown UPCs will flag validation errors.</p>
+  <textarea id="bulkUpcInput" rows="10" placeholder="0020111100000\n0020111200000,..."></textarea>
+  <div class="modal-actions">
+    <button id="confirmBulkUPC">Add UPCs</button>
+    <button class="close-modal" data-close="#modalBulkUPC">Cancel</button>
+  </div>
+</div>
+
+<div class="modal hidden" id="modalIssues">
+  <h2>Validation Issues</h2>
+  <ul id="issuesList"></ul>
+  <div class="modal-actions">
+    <button class="close-modal" data-close="#modalIssues">Close</button>
+  </div>
+</div>
+
+<div class="modal hidden" id="modalCsvPreview">
+  <h2>CSV Preview</h2>
+  <pre id="csvPreview" class="csv-box"></pre>
+  <div class="modal-actions">
+    <button class="close-modal" data-close="#modalCsvPreview">Close</button>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+<script src="app.js" type="module"></script>
+</body>
+</html>
