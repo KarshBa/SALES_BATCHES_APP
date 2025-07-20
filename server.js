@@ -39,11 +39,6 @@ const writeJSON = (p, v) => fs.writeFileSync(p, JSON.stringify(v, null, 2));
 // Ensure data directory exists
 if(!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
-// Hourly auto-refresh
-if(!refreshTimer){
-  refreshTimer = setInterval(()=>refreshMasterItems('auto'), 60*60*1000);
-}
-
 // --- middleware ---------------------------------------------------
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -126,7 +121,9 @@ function parseMasterCsv(csvText){
   const rows = parse(csvText,{columns:true,skip_empty_lines:true});
   const map  = new Map();
   rows.forEach(r=>{
-    const upc = normalizeUPC(pick(r,['main code','code','item code','upc']));
+    const upc = normalizeUPC(
+   pick(r,['Main code'])
+ );
     if(!upc) return;
     map.set(upc,{
       upc,
