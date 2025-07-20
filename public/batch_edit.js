@@ -10,12 +10,6 @@ const AUTO_SAVE_DEBOUNCE = 500;
 
 const params = new URLSearchParams(location.search);
 const initialBatchId = params.get('batch');
-const canonUPC = raw => {
-  let d = String(raw||'').replace(/\D/g,'');
-  if (!d) return '';
-  if (d.length === 12) d = d.slice(0,11);
-  return d.padStart(13,'0');
-};
 
 if(!initialBatchId){
   location.replace('batches.html');
