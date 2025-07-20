@@ -25,7 +25,9 @@ const MASTER_SOURCE_URL =
   process.env.ITEM_CSV_URL      ||
   'https://item-list-handler.onrender.com/item_list.csv';
 
-let masterRefreshTimer = null;
+ // keep UPC → item in RAM so look‑ups are fast everywhere
+let masterItemsMap = new Map();
+let refreshTimer    = null;     // hourly cron handle
 
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 if (!fs.existsSync(BATCHES_PATH)) fs.writeFileSync(BATCHES_PATH, '[]', 'utf8');
@@ -33,27 +35,6 @@ if (!fs.existsSync(BATCHES_PATH)) fs.writeFileSync(BATCHES_PATH, '[]', 'utf8');
 // --- helpers ------------------------------------------------------
 const readJSON = p => JSON.parse(fs.readFileSync(p, 'utf8'));
 const writeJSON = (p, v) => fs.writeFileSync(p, JSON.stringify(v, null, 2));
-
-/*** Refresh master list from remote CSV. * Writes JSON to disk atomically and updates in‑memory map. */
-async function refreshMasterItems(source='auto'){
-  if(!MASTER_SOURCE_URL){
-    console.warn('[MasterItems] No MASTER_SOURCE_URL configured.');
-    return;
-  }
-  const tag = source === 'manual' ? 'Manual-refresh' : 'Auto-refresh';
-  try{
-    const res = await fetch(MASTER_SOURCE_URL, { timeout: 20_000 });
-    if(!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-    const csvText = await res.text();
-    const json = parseMasterCsvToJson(csvText);
-    const tmp = MASTER_JSON_PATH + '.tmp';
-    fs.writeFileSync(tmp, JSON.stringify(json,null,2));
-    fs.renameSync(tmp, MASTER_JSON_PATH);
-    console.log(`[MasterItems][${tag}] ${json.length.toLocaleString()} items @ ${new Date().toISOString()}`);
-  }catch(err){
-    console.warn(`[MasterItems][${tag}] failed: ${err.message}`);
-  }
-}
 
 // Ensure data directory exists
 if(!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
