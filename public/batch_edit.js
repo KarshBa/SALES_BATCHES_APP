@@ -28,8 +28,10 @@ const els = {
   lineFilter:        document.getElementById('lineFilter'),
   linesTbody:        document.getElementById('linesTbody'),
   statusSummary:     document.getElementById('statusSummary'),
-  // optional (only if you add the button back)
   btnAddLines:       document.getElementById('btnAddLines'),
+  btnBulkUPC:        document.getElementById('btnBulkUPC'),
+  btnRecalc:         document.getElementById('btnRecalc'),
+  btnRefreshMaster:  document.getElementById('btnRefreshMaster'),
 
   // bulk controls
   bulkRecordType:    document.getElementById('bulkRecordType'),
@@ -94,10 +96,11 @@ function scheduleSave(b){
 }
 
 /* ---------- Master List ---------- */
-async function loadMaster(){
-  if(masterLoaded) return;
+async function loadMaster(force=false){
+  if(masterLoaded && !force) return;
   try{
-    const res = await fetch(MASTER_URL,{cache:'no-store'});
+    const url = MASTER_URL + (force ? `?_= ${Date.now()}` : '');
+    const res = await fetch(url,{cache:'no-store'});
     if(!res.ok) throw new Error(res.status);
     const data = await res.json();
     masterItems = new Map();
@@ -105,7 +108,7 @@ async function loadMaster(){
       if(it.upc) masterItems.set(it.upc.trim(), it);
     });
     masterLoaded = true;
-    toast(`Master loaded (${masterItems.size})`,'success');
+    toast(`Master items ${force? 'reloaded':'loaded'} (${masterItems.size})`,'success');
   }catch(err){
     toast('Master list failed to load','error',6000);
   }
@@ -434,3 +437,38 @@ document.addEventListener('keydown', e=>{
     }
   }
 });
+
+// Manual refresh of master item list (POST to server then reload)
+if(els.btnRefreshMaster){
+  els.btnRefreshMaster.addEventListener('click', async ()=>{
+    els.btnRefreshMaster.disabled = true;
+    els.btnRefreshMaster.textContent = 'Refreshing…';
+    try{
+      const res = await fetch('/api/refresh-master-items', { method:'POST' });
+      if(res.ok){
+        await loadMaster(true);
+        // Re-populate existing lines
+        const b = getCurrentBatch();
+        if(masterItems){
+          b.lines.forEach(l=>{
+            const itm = masterItems.get(l.upc);
+            if(itm){
+              l.brand = itm.brand;
+              l.description = itm.description;
+              l.regPrice = itm.reg_price;
+            }
+          });
+          scheduleSave(b);
+          renderLines();
+        }
+      } else {
+        toast('Server refresh failed','error');
+      }
+    }catch(e){
+      toast('Refresh error','error');
+    }finally{
+      els.btnRefreshMaster.disabled = false;
+      els.btnRefreshMaster.textContent = 'Refresh Items';
+    }
+  });
+}
