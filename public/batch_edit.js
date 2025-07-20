@@ -224,7 +224,19 @@ els.linesTbody.addEventListener('input', e=>{
   else if(e.target.classList.contains('cell-endDate')) line.endDate = e.target.value;
 
   scheduleSave(b);
-  renderLines(); // re-render to update validation highlights
+
+  // inline validation highlight for the edited cell only
+  const idx = parseInt(tr.dataset.index, 10);
+  const issues = validateLine({ ...line }, idx);
+  // remove previous flags on that row
+  tr.querySelectorAll('.invalid-cell').forEach(c => c.classList.remove('invalid-cell'));
+  if (issues.length) {
+    if (issues.some(t => t.includes('Record Type'))) tr.querySelector('.cell-recordType')?.classList.add('invalid-cell');
+    if (issues.some(t => t.includes('UPC')))         tr.querySelector('.cell-upc')?.classList.add('invalid-cell');
+    if (issues.some(t => t.includes('Promo_Price'))) tr.querySelector('.cell-promoPrice')?.classList.add('invalid-cell');
+    if (issues.some(t => t.includes('Start_Date')))  tr.querySelector('.cell-startDate')?.classList.add('invalid-cell');
+    if (issues.some(t => t.includes('End_Date')))    tr.querySelector('.cell-endDate')?.classList.add('invalid-cell');
+  }
 });
 
 els.linesTbody.addEventListener('click', e=>{
@@ -239,6 +251,8 @@ els.linesTbody.addEventListener('click', e=>{
     }
   }
 });
+
+els.linesTbody.addEventListener('change', () => renderLines());
 
 /* ---------- Auto Bulk Apply (no buttons) ---------- */
 function autoDebounce(fn, wait=60){
