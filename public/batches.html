@@ -1,0 +1,78 @@
+<!-- public/batches.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Price Change Batches</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link rel="stylesheet" href="styles.css">
+<style>
+  main { max-width: 960px; margin: 2rem auto; }
+  .batch-cards {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fill,minmax(240px,1fr));
+  }
+  .batch-card {
+    border: 1px solid var(--border,#ddd);
+    border-radius: 6px;
+    padding: .9rem .9rem .75rem;
+    background:#fff;
+    display:flex;
+    flex-direction:column;
+    box-shadow:0 1px 2px rgba(0,0,0,.06);
+  }
+  .batch-card h3 {
+    margin:0 0 .35rem;
+    font-size:1.05rem;
+    line-height:1.2;
+    word-break:break-word;
+  }
+  .batch-meta {
+    font-size:.73rem;
+    opacity:.7;
+    margin-bottom:.5rem;
+  }
+  .batch-actions button {
+    margin:0 .25rem .25rem 0;
+  }
+  header .header-actions { gap:.5rem; flex-wrap:wrap; }
+  #emptyNote { text-align:center; padding:2.5rem 1rem; opacity:.7; }
+  @media (max-width:600px){
+    .batch-cards { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<header class="app-header">
+  <h1>Price Change Batches</h1>
+  <div class="header-actions">
+    <button id="btnNewBatch">New Batch</button>
+    <button id="btnImport" class="secondary" disabled hidden>Import</button>
+    <input type="search" id="filterBatches" placeholder="Filter…" aria-label="Filter batches">
+  </div>
+</header>
+<main>
+  <div id="emptyNote" class="hidden">No batches yet. Create one to get started.</div>
+  <div id="batchList" class="batch-cards" aria-live="polite"></div>
+</main>
+
+<!-- New Batch Modal -->
+<div id="modalOverlay" class="overlay hidden" aria-hidden="true"></div>
+<div class="modal hidden" id="modalCreate" role="dialog" aria-modal="true" aria-labelledby="modalCreateTitle">
+  <h2 id="modalCreateTitle">Create New Batch</h2>
+  <label>Batch Name
+    <input type="text" id="createName" placeholder="WeekendAd_2025_07_26">
+  </label>
+  <div class="modal-actions">
+    <button id="createConfirm">Create</button>
+    <button class="close-modal" data-close="#modalCreate">Cancel</button>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+<script type="module" src="batches.js"></script>
+</body>
+</html>
