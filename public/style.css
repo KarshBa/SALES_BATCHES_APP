@@ -55,6 +55,11 @@ button {
   cursor:pointer;
   line-height:1;
 }
+button.tiny {
+  padding: .35rem .55rem;
+  font-size: .7rem;
+  line-height: 1;
+}
 button:hover, button:focus {
   background: var(--primary-hover);
   outline:none;
