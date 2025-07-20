@@ -1,78 +1,165 @@
-<!-- public/batches.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
 <title>Price Change Batches</title>
-<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <link rel="stylesheet" href="styles.css">
 <style>
-  main { max-width: 960px; margin: 2rem auto; }
-  .batch-cards {
-    display: grid;
-    gap: 1rem;
-    grid-template-columns: repeat(auto-fill,minmax(240px,1fr));
+  :root {
+    --sunflower: #FFC300;
   }
-  .batch-card {
-    border: 1px solid var(--border,#ddd);
-    border-radius: 6px;
-    padding: .9rem .9rem .75rem;
+  body { font-family: Arial, sans-serif; background:#fafafa; }
+
+  header.app-header {
+    background: var(--sunflower);
+    color:#fff;
+    text-align:center;
+    padding:1.1rem 0 1rem;
+    margin:0 0 1.25rem;
+  }
+  header.app-header h1 {
+    margin:0;
+    font-size:1.9rem;
+    font-weight:600;
+    letter-spacing:.5px;
+  }
+
+  .center-wrap {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0 1rem 3rem;
+  }
+
+  .card {
     background:#fff;
+    border:1px solid #e2e2e2;
+    border-radius:.55rem;
+    padding:1rem 1.25rem 1.5rem;
+    box-shadow:0 2px 4px rgba(0,0,0,.04);
+  }
+
+  .top-bar {
     display:flex;
-    flex-direction:column;
-    box-shadow:0 1px 2px rgba(0,0,0,.06);
+    flex-wrap:wrap;
+    gap:.75rem;
+    align-items:flex-end;
+    margin-bottom:1rem;
   }
-  .batch-card h3 {
-    margin:0 0 .35rem;
-    font-size:1.05rem;
-    line-height:1.2;
-    word-break:break-word;
+  .top-bar .grow { flex:1 1 auto; }
+  .top-bar label { display:block; font-size:.7rem; letter-spacing:.05em; text-transform:uppercase; margin-bottom:.25rem; color:#555; }
+
+  .batch-create {
+    display:flex;
+    flex-wrap:wrap;
+    gap:.5rem;
+    align-items:flex-end;
+    margin-top:.25rem;
   }
-  .batch-meta {
-    font-size:.73rem;
-    opacity:.7;
-    margin-bottom:.5rem;
+  .batch-create input { min-width:210px; }
+
+  table.batch-table {
+    width:100%;
+    border-collapse:collapse;
+    font-size:.9rem;
   }
-  .batch-actions button {
-    margin:0 .25rem .25rem 0;
+  table.batch-table th,
+  table.batch-table td {
+    padding:.55rem .6rem;
+    border-bottom:1px solid #eee;
+    text-align:left;
+    vertical-align:middle;
   }
-  header .header-actions { gap:.5rem; flex-wrap:wrap; }
-  #emptyNote { text-align:center; padding:2.5rem 1rem; opacity:.7; }
-  @media (max-width:600px){
-    .batch-cards { grid-template-columns: 1fr; }
+  table.batch-table th {
+    background:#f7f7f7;
+    font-weight:600;
+    font-size:.72rem;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:#555;
   }
+  table.batch-table tbody tr:hover {
+    background:#fffbe6;
+  }
+  .actions button {
+    margin:0 .15rem .25rem 0;
+  }
+
+  .empty {
+    text-align:center;
+    padding:2rem 1rem;
+    color:#777;
+  }
+
+  .bulk-actions-bar {
+    display:flex;
+    align-items:center;
+    gap:.75rem;
+    margin-top:.75rem;
+    flex-wrap:wrap;
+    font-size:.8rem;
+  }
+
+  /* mobile scroll */
+  .table-wrap { overflow-x:auto; }
+
+  @media (max-width:700px){
+    .actions button { padding:.4rem .55rem; font-size:.7rem; }
+    table.batch-table th:nth-child(3),
+    table.batch-table td:nth-child(3) { display:none; } /* hide Updated on narrow */
+  }
+
+  @media print { body * { display:none !important; } }
 </style>
 </head>
 <body>
 <header class="app-header">
   <h1>Price Change Batches</h1>
-  <div class="header-actions">
-    <button id="btnNewBatch">New Batch</button>
-    <button id="btnImport" class="secondary" disabled hidden>Import</button>
-    <input type="search" id="filterBatches" placeholder="Filter…" aria-label="Filter batches">
-  </div>
 </header>
-<main>
-  <div id="emptyNote" class="hidden">No batches yet. Create one to get started.</div>
-  <div id="batchList" class="batch-cards" aria-live="polite"></div>
-</main>
 
-<!-- New Batch Modal -->
-<div id="modalOverlay" class="overlay hidden" aria-hidden="true"></div>
-<div class="modal hidden" id="modalCreate" role="dialog" aria-modal="true" aria-labelledby="modalCreateTitle">
-  <h2 id="modalCreateTitle">Create New Batch</h2>
-  <label>Batch Name
-    <input type="text" id="createName" placeholder="WeekendAd_2025_07_26">
-  </label>
-  <div class="modal-actions">
-    <button id="createConfirm">Create</button>
-    <button class="close-modal" data-close="#modalCreate">Cancel</button>
+<main class="center-wrap">
+  <div class="card">
+    <div class="top-bar">
+      <div class="grow">
+        <label for="batchSearch">Filter</label>
+        <input id="batchSearch" type="search" placeholder="Search batch names..." />
+      </div>
+      <div class="batch-create">
+        <div>
+          <label for="newBatchName">New Batch Name</label>
+          <input id="newBatchName" type="text" placeholder="WeekendAd_2025_07_26" />
+        </div>
+        <div style="align-self:flex-end;">
+          <button id="btnCreateBatch">Create</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table class="batch-table" id="batchesTable" aria-describedby="batchSummary">
+        <thead>
+          <tr>
+            <th><input type="checkbox" id="chkAll" title="Select All" /></th>
+            <th>Name</th>
+            <th>Updated</th>
+            <th>Lines</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="batchesTbody"></tbody>
+      </table>
+    </div>
+
+    <div class="bulk-actions-bar">
+      <button id="btnDeleteSelected" class="danger" disabled>Delete Selected</button>
+      <span id="batchSummary"></span>
+    </div>
   </div>
-</div>
+</main>
 
 <!-- Toast container -->
 <div id="toastContainer" class="toast-container" aria-live="polite"></div>
 
-<script type="module" src="batches.js"></script>
+<script type="module" src="batches_list.js"></script>
 </body>
 </html>
