@@ -1,51 +1,34 @@
+<!-- public/sales_batches.html (edited) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>Price Change Batch Builder</title>
+<title>Edit Batch – Price Change Batch Builder</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 <header class="app-header">
-  <h1>Price Change Batch Builder</h1>
+  <h1 id="editTitle">Batch Editor</h1>
   <div class="header-actions">
-    <span id="currentBatchLabel" class="badge" aria-live="polite">No batch selected</span>
-    <button id="btnNew">Create New Batch</button>
-    <button id="btnDuplicate" disabled>Duplicate Batch</button>
-    <button id="btnDelete" disabled>Delete Batch</button>
-    <button id="btnBack" class="hidden">Back to Batch List</button>
+    <span id="currentBatchLabel" class="badge" aria-live="polite">Loading…</span>
+    <button id="btnBack">Back to Batches</button>
     <button id="btnExport" disabled>Export CSV</button>
   </div>
 </header>
 
 <main id="appMain">
-  <!-- Batch List View -->
-  <section id="batchListView">
-    <div class="list-toolbar">
-      <input type="search" id="batchSearch" placeholder="Filter batches..." aria-label="Filter batches">
-    </div>
-    <table class="table batches-table">
-      <thead>
-        <tr>
-          <th>Name</th><th>Lines</th><th>Updated</th><th>Actions</th>
-        </tr>
-      </thead>
-      <tbody id="batchesTbody"></tbody>
-    </table>
-  </section>
-
-  <!-- Batch Editing View -->
-  <section id="batchEditView" class="hidden">
+  <!-- Only Editing View now -->
+  <section id="batchEditView">
+    <!-- bulk bar (unchanged from your previous) -->
     <div class="bulk-bar">
+      <!-- (keep same bulk controls markup you already have) -->
+      <!-- ... existing bulk controls from your prior file ... -->
       <div class="bulk-field">
         <label>Record Type</label>
         <select id="bulkRecordType">
           <option value="">(pick)</option>
-          <option>SALE</option>
-          <option>TPR</option>
-          <option>INSTORE</option>
-          <option>REG</option>
+          <option>SALE</option><option>TPR</option><option>INSTORE</option><option>REG</option>
         </select>
         <button id="applyRecordType">Apply All</button>
       </div>
@@ -88,16 +71,8 @@
       <table class="table edit-table" id="linesTable">
         <thead>
           <tr>
-            <th>Record Type</th>
-            <th>UPC</th>
-            <th>Brand</th>
-            <th>Description</th>
-            <th>Reg_Price</th>
-            <th>Promo_Price</th>
-            <th>PromoQTY</th>
-            <th>Start_Date</th>
-            <th>End_Date</th>
-            <th></th>
+            <th>Record Type</th><th>UPC</th><th>Brand</th><th>Description</th><th>Reg_Price</th>
+            <th>Promo_Price</th><th>PromoQTY</th><th>Start_Date</th><th>End_Date</th><th></th>
           </tr>
         </thead>
         <tbody id="linesTbody"></tbody>
@@ -111,17 +86,10 @@
   </section>
 </main>
 
-<!-- Modals -->
+<!-- Re-use existing modals: Bulk UPC, Add Lines, Issues, CSV Preview -->
 <div id="modalOverlay" class="overlay hidden" aria-hidden="true"></div>
 
-<div class="modal hidden" id="modalNewBatch" role="dialog" aria-modal="true" aria-labelledby="modalNewBatchTitle">
-  <h2 id="modalNewBatchTitle">Create New Batch</h2>
-  <label>Batch Name <input type="text" id="newBatchName" placeholder="WeekendAd_2025_07_26"></label>
-  <div class="modal-actions">
-    <button id="createBatchConfirm">Create</button>
-    <button class="close-modal" data-close="#modalNewBatch">Cancel</button>
-  </div>
-</div>
+<!-- (Copy the required modal blocks from your original file) -->
 
 <div class="modal hidden" id="modalAddLines">
   <h2>Add Lines</h2>
@@ -136,7 +104,6 @@
 
 <div class="modal hidden" id="modalBulkUPC">
   <h2>Bulk UPC Add</h2>
-  <p>Paste UPCs (comma / newline separated). Unknown UPCs will flag validation errors.</p>
   <textarea id="bulkUpcInput" rows="10" placeholder="0020111100000\n0020111200000,..."></textarea>
   <div class="modal-actions">
     <button id="confirmBulkUPC">Add UPCs</button>
@@ -160,9 +127,8 @@
   </div>
 </div>
 
-<!-- Toast container -->
 <div id="toastContainer" class="toast-container" aria-live="polite"></div>
 
-<script src="app.js" type="module"></script>
+<script type="module" src="app.js"></script>
 </body>
 </html>
