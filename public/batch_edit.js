@@ -10,6 +10,13 @@ const AUTO_SAVE_DEBOUNCE = 500;
 
 const params = new URLSearchParams(location.search);
 const initialBatchId = params.get('batch');
+const canonUPC = raw => {
+  let d = String(raw||'').replace(/\D/g,'');
+  if (!d) return '';
+  if (d.length === 12) d = d.slice(0,11);
+  return d.padStart(13,'0');
+};
+
 if(!initialBatchId){
   location.replace('batches.html');
 }
@@ -117,28 +124,43 @@ async function loadMaster(force=false){
 /* ---------- Validation ---------- */
 function validateLine(line, index){
   const issues = [];
+
+  // 1️⃣ Record‑Type
   const rt = line.recordType?.trim();
-  if(!RECORD_TYPES.includes(rt)) issues.push(`Line ${index+1}: Record Type invalid/blank`);
-  const upc = line.upc.replace(/\D/g,'');
-  if(!upc || upc.length<12 || upc.length>14) issues.push(`Line ${index+1}: UPC invalid length`);
-  else if(masterItems && !masterItems.has(upc)) issues.push(`Line ${index+1}: UPC not in master list`);
-  const needsPromo = rt && rt !== 'REG';
-  if(needsPromo){
-    if(line.promoPrice === '' || isNaN(parseFloat(line.promoPrice)) || parseFloat(line.promoPrice)<=0)
-      issues.push(`Line ${index+1}: Promo_Price required`);
-    if(!line.startDate) issues.push(`Line ${index+1}: Start_Date required`);
-    if(!line.endDate)   issues.push(`Line ${index+1}: End_Date required`);
+  if (!RECORD_TYPES.includes(rt)) {
+    issues.push(`Line ${index+1}: Record Type invalid/blank`);
   }
-  if(line.startDate && line.endDate && line.endDate < line.startDate)
+
+  // 2️⃣ UPC  (pad to 13 digits)
+  const upc = canonUPC(line.upc);
+  if (!upc) {
+    issues.push(`Line ${index+1}: UPC missing`);
+  } else if (masterItems && !masterItems.has(upc)) {
+    issues.push(`Line ${index+1}: UPC not in master list`);
+  }                               // ←—— **CLOSES the else‑if block**
+
+  // 3️⃣ Prices / dates
+  const needsPromo = rt && rt !== 'REG';
+  if (needsPromo) {
+    if (line.promoPrice === '' || isNaN(+line.promoPrice) || +line.promoPrice <= 0) {
+      issues.push(`Line ${index+1}: Promo_Price required`);
+    }
+    if (!line.startDate) issues.push(`Line ${index+1}: Start_Date required`);
+    if (!line.endDate)   issues.push(`Line ${index+1}: End_Date required`);
+  }
+
+  // 4️⃣ Date order
+  if (line.startDate && line.endDate && line.endDate < line.startDate) {
     issues.push(`Line ${index+1}: End_Date < Start_Date`);
-  // normalize qty
-  let qty = parseInt(line.promoQty,10);
-  if(isNaN(qty) || qty < 1){ qty = 1; line.promoQty = qty; }
-  return issues;
-}
-function collectValidation(batch){
-  const issues = [];
-  batch.lines.forEach((l,i)=> issues.push(...validateLine({...l}, i)));
+  }
+
+  // 5️⃣ Normalise qty
+  let qty = parseInt(line.promoQty, 10);
+  if (isNaN(qty) || qty < 1) {
+    qty = 1;
+    line.promoQty = qty;
+  }
+
   return issues;
 }
 
@@ -208,7 +230,7 @@ els.linesTbody.addEventListener('input', e=>{
   else if(e.target.classList.contains('cell-upc')) {
     line.upc = e.target.value.replace(/\D/g,'');
     if(masterItems && line.upc.length >= 12){
-      const item = masterItems.get(line.upc);
+      cconst item = masterItems.get(canonUPC(line.upc));
       if(item){
         line.brand = item.brand;
         line.description = item.description;
@@ -365,7 +387,7 @@ function csvForBatch(batch){
     if(validateLine({...l}, i).length) return;
     const row = [
       l.recordType,
-      l.upc,
+      l.canonUPC(l.upc),
       l.promoPrice ?? '',
       l.promoQty || 1,
       l.startDate || '',
