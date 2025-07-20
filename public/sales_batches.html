@@ -182,62 +182,47 @@
     <div class="editor-controls">
       <button id="btnValidate">Validate</button>
       <button id="btnExport" disabled>Export CSV</button>
+      <button id="btnAddLines">+ Add Lines</button>
+      <button id="btnBulkUPC">Bulk UPC Add</button>
       <a href="batches.html" class="secondary" style="text-decoration:none;display:inline-block;padding:.55rem .85rem;">Back to Batches</a>
     </div>
   </div>
 
-  <!-- Horizontal Bulk Apply Controls -->
+  <!-- Bulk Controls -->
   <div class="bulk-row" id="bulkControls">
-    <!-- Record Type -->
     <div class="bulk-block">
       <label for="bulkRecordType">Record Type (All)</label>
-      <div class="bulk-actions-inline">
-        <select id="bulkRecordType">
-          <option value=""></option>
-          <option>SALE</option>
-          <option>TPR</option>
-          <option>INSTORE</option>
-          <option>REG</option>
-        </select>
-        <button id="applyRecordType" class="tiny">All</button>
-      </div>
+      <select id="bulkRecordType">
+        <option value=""></option>
+        <option>SALE</option>
+        <option>TPR</option>
+        <option>INSTORE</option>
+        <option>REG</option>
+      </select>
     </div>
 
     <!-- Promo Price -->
     <div class="bulk-block">
       <label for="bulkPromoPrice">Promo Price (All)</label>
-      <div class="bulk-actions-inline">
-        <input type="number" id="bulkPromoPrice" step="0.01" min="0">
-        <button id="applyPromoPriceAll" class="tiny">All</button>
-      </div>
+      <input type="number" id="bulkPromoPrice" step="0.01" min="0">
     </div>
 
     <!-- Promo Qty -->
     <div class="bulk-block">
-      <label for="bulkPromoQty">Promo Qty</label>
-      <div class="bulk-actions-inline">
-        <input type="number" id="bulkPromoQty" min="1">
-        <button id="applyPromoQtyEmpty" class="tiny">Empty</button>
-        <button id="applyPromoQtyAll" class="tiny">All</button>
-      </div>
+      <label for="bulkPromoQty">Promo Qty (All)</label>
+      <input type="number" id="bulkPromoQty" min="1">
     </div>
 
     <!-- Start Date -->
     <div class="bulk-block">
       <label for="bulkStartDate">Start Date (All)</label>
-      <div class="bulk-actions-inline">
-        <input type="date" id="bulkStartDate">
-        <button id="applyStartDateAll" class="tiny">All</button>
-      </div>
+      <input type="date" id="bulkStartDate">
     </div>
 
     <!-- End Date -->
     <div class="bulk-block">
       <label for="bulkEndDate">End Date (All)</label>
-      <div class="bulk-actions-inline">
-        <input type="date" id="bulkEndDate">
-        <button id="applyEndDateAll" class="tiny">All</button>
-      </div>
+      <input type="date" id="bulkEndDate">
     </div>
 
     <!-- Spacer / could add future utilities -->
