@@ -263,3 +263,9 @@ textarea {
   table { font-size:.65rem; }
   .edit-table th { position:static; }
 }
+/* append to styles.css */
+button.danger {
+  background: #c0352b;
+  color:#fff;
+}
+button.danger:hover { background:#9f2a22; }
