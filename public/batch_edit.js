@@ -29,24 +29,19 @@ let saveTimer = null;
 
 /* ---------- DOM ---------- */
 const els = {
-  currentBatchLabel: document.getElementById('currentBatchLabel'),
-  btnValidate:       document.getElementById('btnValidate'),
-  btnExport:         document.getElementById('btnExport'),
-  lineFilter:        document.getElementById('lineFilter'),
-  linesTbody:        document.getElementById('linesTbody'),
-  statusSummary:     document.getElementById('statusSummary'),
-  btnAddLines:       document.getElementById('btnAddLines'),
-  btnBulkUPC:        document.getElementById('btnBulkUPC'),
-  btnRecalc:         document.getElementById('btnRecalc'),
-  btnRefreshMaster:  document.getElementById('btnRefreshMaster'),
+  currentBatchLabel : document.getElementById('currentBatchLabel'),
+  btnExport         : document.getElementById('btnExport'),
 
-  // bulk controls
-  bulkRecordType:    document.getElementById('bulkRecordType'),
-  bulkPromoPrice:    document.getElementById('bulkPromoPrice'),
-  bulkPromoQty:      document.getElementById('bulkPromoQty'),
-  bulkStartDate:     document.getElementById('bulkStartDate'),
-  bulkEndDate:       document.getElementById('bulkEndDate'),
-  btnBulkUPC:        document.getElementById('btnBulkUPC')
+  lineFilter        : document.getElementById('lineFilter'),
+  linesTbody        : document.getElementById('linesTbody'),
+  statusSummary     : document.getElementById('statusSummary'),
+
+  // bulk controls that still exist
+  bulkRecordType    : document.getElementById('bulkRecordType'),
+  bulkPromoPrice    : document.getElementById('bulkPromoPrice'),
+  bulkPromoQty      : document.getElementById('bulkPromoQty'),
+  bulkStartDate     : document.getElementById('bulkStartDate'),
+  bulkEndDate       : document.getElementById('bulkEndDate')
 };
 
 // Modals
@@ -121,25 +116,33 @@ async function loadMaster(force=false){
   }
 }
 
+/* ---------- Canonicalise UPC ---------- */
+function canonUPC(raw){
+  const d = String(raw || '').replace(/\D/g, '');
+  if (!d) return '';                 // nothing
+  if (d.length === 12) return ('0' + d.slice(0, 11)).padStart(13, '0');
+  return d.padStart(13, '0');        // any other length → left‑pad
+}
+
 /* ---------- Validation ---------- */
 function validateLine(line, index){
-  const issues = [];
+  const issues   = [];
+  const rt       = line.recordType?.trim();
+  const upc      = canonUPC(line.upc);
 
-  // 1️⃣ Record‑Type
-  const rt = line.recordType?.trim();
+  /* Record type ---------------------------------------------------- */
   if (!RECORD_TYPES.includes(rt)) {
     issues.push(`Line ${index+1}: Record Type invalid/blank`);
   }
 
-  // 2️⃣ UPC  (pad to 13 digits)
-  const upc = canonUPC(line.upc);
+  /* UPC ------------------------------------------------------------ */
   if (!upc) {
     issues.push(`Line ${index+1}: UPC missing`);
   } else if (masterItems && !masterItems.has(upc)) {
     issues.push(`Line ${index+1}: UPC not in master list`);
-  }                               // ←—— **CLOSES the else‑if block**
+  }
 
-  // 3️⃣ Prices / dates
+  /* Promo‐related fields ------------------------------------------ */
   const needsPromo = rt && rt !== 'REG';
   if (needsPromo) {
     if (line.promoPrice === '' || isNaN(+line.promoPrice) || +line.promoPrice <= 0) {
@@ -149,14 +152,14 @@ function validateLine(line, index){
     if (!line.endDate)   issues.push(`Line ${index+1}: End_Date required`);
   }
 
-  // 4️⃣ Date order
-  if (line.startDate && line.endDate && line.endDate < line.startDate) {
+  /* Date order ----------------------------------------------------- */
+  if (line.startDate && line.endDate && line.endDate < line.startDate){
     issues.push(`Line ${index+1}: End_Date < Start_Date`);
   }
 
-  // 5️⃣ Normalise qty
+  /* Normalise qty -------------------------------------------------- */
   let qty = parseInt(line.promoQty, 10);
-  if (isNaN(qty) || qty < 1) {
+  if (isNaN(qty) || qty < 1){
     qty = 1;
     line.promoQty = qty;
   }
