@@ -122,7 +122,7 @@ function parseMasterCsv(csvText){
   const map  = new Map();
   rows.forEach(r=>{
     const upc = normalizeUPC(
-   pick(r,['Main code'])
+    pick(r, ['main code','code','item code','upc'])
  );
     if(!upc) return;
     map.set(upc,{
