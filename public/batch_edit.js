@@ -225,8 +225,6 @@ els.linesTbody.addEventListener('input', e=>{
 
   scheduleSave(b);
 
-  // inline validation highlight for the edited cell only
-  const idx = parseInt(tr.dataset.index, 10);
   const issues = validateLine({ ...line }, idx);
   // remove previous flags on that row
   tr.querySelectorAll('.invalid-cell').forEach(c => c.classList.remove('invalid-cell'));
