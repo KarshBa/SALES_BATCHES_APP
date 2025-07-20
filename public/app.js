@@ -5,6 +5,13 @@
  */
 
 import { v4 as uuidv4 } from 'https://cdn.jsdelivr.net/npm/uuid@9.0.1/+esm';
+import { findBatch, upsertBatch, loadAllBatches, exportCsvFromBatch, toast } from './shared_batch_lib.js';
+
+const params = new URLSearchParams(location.search);
+const currentBatchId = params.get('batch');
+if(!currentBatchId){
+  location.replace('batches.html');
+}
 
 // ---------- Constants -------------------------------------------------
 const LS_KEY = 'priceChangeBatches_v1';
