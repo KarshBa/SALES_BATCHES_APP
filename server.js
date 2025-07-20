@@ -39,22 +39,9 @@ const writeJSON = (p, v) => fs.writeFileSync(p, JSON.stringify(v, null, 2));
 // Ensure data directory exists
 if(!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 
-// Initial load (try existing file, else fetch)
-try{
-  if(fs.existsSync(MASTER_JSON_PATH)){
-    const existing = JSON.parse(fs.readFileSync(MASTER_JSON_PATH,'utf8'));
-    masterItemsMap = new Map(existing.map(o=>[o.upc,o]));
-    console.log(`[MasterItems][Startup] Loaded ${masterItemsMap.size} items from disk.`);
-  } else {
-    await refreshMasterItems('manual'); // first seed
-  }
-}catch(e){
-  console.warn('[MasterItems][Startup] load failed:', e.message);
-}
-
 // Hourly auto-refresh
-if(!masterRefreshTimer){
-  masterRefreshTimer = setInterval(()=>refreshMasterItems('auto'), 60*60*1000);
+if(!refreshTimer){
+  refreshTimer = setInterval(()=>refreshMasterItems('auto'), 60*60*1000);
 }
 
 // --- middleware ---------------------------------------------------
@@ -150,10 +137,6 @@ function parseMasterCsv(csvText){
   });
   return map;
 }
-
-// keep map in memory so look‑ups are fast
-let masterItemsMap = new Map();
-let refreshTimer   = null;
 
 async function refreshMasterItems(source='auto'){
   if(!MASTER_SOURCE_URL) return;
