@@ -77,11 +77,17 @@ function handleQuickUPC(){
       line.description = itm.description;
       line.regPrice    = itm.reg_price;
     }
-    b.lines.push(line);
+    upsertLine(b, line);
   });
 
   scheduleSave(b);
   renderLines();
+}
+
+function upsertLine(batch, newLine){
+  const i = batch.lines.findIndex(l => canonUPC(l.upc) === canonUPC(newLine.upc));
+  if (i !== -1) batch.lines[i] = newLine;   // overwrite existing
+  else           batch.lines.push(newLine); // otherwise append
 }
 
 function firstEmptyLine(batch){
@@ -433,7 +439,7 @@ upcInput.addEventListener('keydown', e => {
         line.description = itm.description;
         line.regPrice = itm.reg_price;
       }
-      b.lines.push(line);
+      upsertLine(b, line);
     });
     scheduleSave(b);
     closeModal(modalBulkUPC);
