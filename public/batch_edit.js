@@ -26,7 +26,8 @@ const els = {
   currentBatchLabel : document.getElementById('currentBatchLabel'),
   btnExport         : document.getElementById('btnExport'),
   bulkUpcQuick      : document.getElementById('bulkUpcQuick'),
-  btnBulkUPC        : document.getElementById('btnBulkUPC'),
+  bulkUpcInput:      document.getElementById('bulkUpcInput'),
+  btnBulkUPC:        document.getElementById('btnBulkUPC')
   btnAddLines       : document.getElementById('btnAddLines'),
 
   lineFilter        : document.getElementById('lineFilter'),
@@ -358,8 +359,36 @@ if(els.btnBulkUPC){
     const ta = document.getElementById('bulkUpcInput');
     if(ta) ta.value = '';
     openModal(modalBulkUPC);
-  });
+  }
+if (els.bulkUpcInput){
+  els.bulkUpcInput.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
 
+    const raw  = e.target.value.trim();
+    if (!raw) return;
+
+    const b    = getCurrentBatch();
+    raw.split(/[\s,]+/).forEach(upc => {
+      if (!upc) return;
+      const ln  = blankLine();
+      ln.recordType = els.bulkRecordType.value || 'SALE';
+      ln.upc   = upc.replace(/\D/g,'');
+
+      const itm = masterItems?.get(canonUPC(ln.upc));
+      if (itm){
+        ln.brand       = itm.brand;
+        ln.description = itm.description;
+        ln.regPrice    = itm.reg_price;
+      }
+      b.lines.push(ln);
+    });
+    scheduleSave(b);
+    renderLines();
+
+    e.target.value = '';                // clear after Enter
+  });
+}
   document.getElementById('confirmBulkUPC').addEventListener('click', () => {
     const ta = document.getElementById('bulkUpcInput');
     if(!ta) { closeModal(modalBulkUPC); return; }
@@ -386,14 +415,11 @@ if(els.btnBulkUPC){
 }
 
 /* ---------- Add Lines (optional button) ---------- */
-if(els.btnAddLines){
-  els.btnAddLines.addEventListener('click', ()=> openModal(modalAddLines));
-  document.getElementById('confirmAddLines').addEventListener('click', ()=>{
-    const n = Math.min(50, Math.max(1, parseInt(document.getElementById('numNewLines').value,10)||1));
+if (els.btnAddLines){
+  els.btnAddLines.addEventListener('click', () => {
     const b = getCurrentBatch();
-    for(let i=0;i<n;i++) b.lines.push(blankLine());
+    b.lines.push(blankLine());          // exactly one
     scheduleSave(b);
-    closeModal(modalAddLines);
     renderLines();
   });
 }
@@ -439,13 +465,10 @@ function downloadCSV(text, filename){
 
 if (els.btnExport) {
 els.btnExport.addEventListener('click', ()=>{
-  const b = getCurrentBatch();
-  const issues = collectValidation(b);
-  if(issues.length){
-    showIssues(issues);
-    toast('Resolve validation issues before export','error');
-    return;
-  }
+  const b   = getCurrentBatch();
+  const bad = collectValidation(b);
+  if (bad.length) showIssues(bad);
+
   const csv = csvForBatch(b);
   csvPreview.textContent = csv;
   downloadCSV(csv, `${b.name}_price_batch.csv`);
