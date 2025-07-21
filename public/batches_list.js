@@ -137,9 +137,9 @@ function render(){
       <td>${escapeHtml(formatTime(b.updatedAt))}</td>
       <td>${b.lines.length}</td>
       <td class="actions">
-        <button class="secondary dup" data-id="${b.id}" title="Duplicate">Dup</button>
+        <button class="secondary dup" data-id="${b.id}" title="Duplicate">Dupe</button>
         <button class="secondary exp" data-id="${b.id}" title="Quick Export">Export</button>
-        <button class="danger del" data-id="${b.id}" title="Delete">Del</button>
+        <button class="danger del" data-id="${b.id}" title="Delete">🗑️</button>
       </td>
     `;
     els.tbody.appendChild(tr);
