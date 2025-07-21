@@ -66,7 +66,7 @@ function handleQuickUPC(){
 
   const b = getCurrentBatch();
   codes.forEach(u=>{
-    const line = blankLine();
+    const line = firstEmptyLine(b) || blankLine();
     line.recordType = RECORD_TYPES.includes(els.bulkRecordType?.value)
                         ? els.bulkRecordType.value : 'SALE';
     line.upc = canonUPC(u);
@@ -82,6 +82,10 @@ function handleQuickUPC(){
 
   scheduleSave(b);
   renderLines();
+}
+
+function firstEmptyLine(batch){
+  return batch.lines.find(l => !l.upc && !l.brand && !l.description);
 }
 
 const roundPromo = p => Math.floor(p*100 - 1) / 100;
@@ -420,7 +424,7 @@ upcInput.addEventListener('keydown', e => {
     if(!tokens.length){ closeModal(modalBulkUPC); return; }
     const b = getCurrentBatch();
     tokens.forEach(upc=>{
-      const line = blankLine();
+      const line = firstEmptyLine(b) || blankLine();
       line.recordType = els.bulkRecordType.value || 'SALE';
       line.upc = upc.replace(/\D/g,'');
       if(masterItems && masterItems.has(line.upc)){
@@ -517,7 +521,7 @@ els.masterSuggestions.addEventListener('click', e=>{
 
   // push selected item as a new line
   const b = getCurrentBatch();
-  const l = blankLine();
+  const l = firstEmptyLine(b) || blankLine();
   l.recordType = els.bulkRecordType.value || 'SALE';
   l.upc = code;
   const itm = masterItems.get(code);
@@ -594,8 +598,10 @@ async function init(){
   let batch = getCurrentBatch();
   if(!batch){
     // fallback: create a blank one if deep link invalid
-    batch = { id: currentBatchId || uuidv4(), name: 'Unnamed', lines: [], updatedAt: new Date().toISOString() };
-    for(let i=0;i<5;i++) batch.lines.push(blankLine());
+    batch = { id: currentBatchId || uuidv4(), name: 'Unnamed', 
+        lines: [ blankLine() ],
+        updatedAt: new Date().toISOString() };
+    batch.lines.push(blankLine());
     batches.push(batch);
   }
   els.currentBatchLabel.textContent = batch.name;
