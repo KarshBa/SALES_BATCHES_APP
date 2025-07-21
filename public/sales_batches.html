@@ -181,6 +181,10 @@ a.button-link {
 a.button-link:hover {
   background: #d1d1d1;       /* match your hover for .secondary buttons */
 }
+.bulk-upc-inline{
+  display:flex; gap:.4rem; align-items:stretch;
+}
+.bulk-upc-inline input{ flex:1; }
 </style>
 </head>
 <body>
@@ -197,6 +201,14 @@ a.button-link:hover {
     </div>
     <div class="editor-controls">
       <button id="btnExport" disabled>Export CSV</button>
+      <div class="bulk-upc-inline">
+  <input id="bulkUpcQuick"
+         type="text"
+         placeholder="UPC, UPC …"
+         style="width:16rem"
+         title="comma / space / return separated UPCs">
+  <button id="btnBulkUPC">Add UPCs</button>
+</div>
       <a href="batches.html" class="secondary button-link">Back to Batches</a>
     </div>
   </div>
@@ -270,7 +282,7 @@ a.button-link:hover {
       <tbody id="linesTbody"></tbody>
     </table>
   </div>
-
+<button id="btnAddLines" style="margin:.8rem 0;">+ Add Lines</button>
   <!-- Footer Controls -->
   <div class="controls-bar">
     <span id="statusSummary"></span>
