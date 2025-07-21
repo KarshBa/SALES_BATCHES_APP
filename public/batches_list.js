@@ -165,15 +165,22 @@ function updateBulkDeleteState(){
 }
 
 /* ---------- Events ---------- */
-els.createBtn.addEventListener('click', ()=>{
+// click on “Create” button
+els.createBtn.addEventListener('click', () => {
   const name = els.newName.value.trim();
-  if(!name) { toast('Enter a batch name','error'); return; }
+  if (!name) { toast('Enter a batch name','error'); return; }
   const b = createBatch(name);
-  if(b){
+  if (b) {
     els.newName.value = '';
-    // open in editor
-    location.href = `sales_batches.html?batch=${b.id}`;
+    location.href = `sales_batches.html?batch=${b.id}`;   // open new batch
   }
+});
+
+/* ⇢ NEW: hit Enter inside the new‑batch field */
+els.newName.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  e.preventDefault();          // stop the form from submitting / reloading
+  els.createBtn.click();       // reuse the regular create logic
 });
 
 els.search.addEventListener('input', render);
