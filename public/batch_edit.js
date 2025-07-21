@@ -256,7 +256,8 @@ els.linesTbody.addEventListener('input', e=>{
   if(e.target.classList.contains('cell-recordType')) line.recordType = e.target.value;
   else if(e.target.classList.contains('cell-upc')) {
     line.upc = e.target.value.replace(/\D/g,'');
-    if(masterItems && line.upc.length >= 12){
+    if(masterItems) {
+      const fullUPC = canonUPC(line.upc);
       const item = masterItems.get(canonUPC(line.upc));
       if(item){
         line.brand = item.brand;
@@ -267,7 +268,9 @@ els.linesTbody.addEventListener('input', e=>{
         line.regPrice = '';
       }
     }
-  } else if(e.target.classList.contains('cell-promoPrice')) line.promoPrice = e.target.value;
+  } 
+  
+  else if(e.target.classList.contains('cell-promoPrice')) line.promoPrice = e.target.value;
   else if(e.target.classList.contains('cell-promoQty')) line.promoQty = e.target.value;
   else if(e.target.classList.contains('cell-startDate')) line.startDate = e.target.value;
   else if(e.target.classList.contains('cell-endDate')) line.endDate = e.target.value;
