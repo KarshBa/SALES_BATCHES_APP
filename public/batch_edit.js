@@ -359,7 +359,6 @@ if(els.btnBulkUPC){
     const ta = document.getElementById('bulkUpcInput');
     if(ta) ta.value = '';
     openModal(modalBulkUPC);
-  }
 });
   
 const upcInput = document.getElementById('bulkUpcInput');
