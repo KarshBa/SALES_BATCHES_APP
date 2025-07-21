@@ -26,15 +26,11 @@ const els = {
   currentBatchLabel : document.getElementById('currentBatchLabel'),
   btnExport         : document.getElementById('btnExport'),
   bulkUpcQuick      : document.getElementById('bulkUpcQuick'),
-  bulkUpcInput:      document.getElementById('bulkUpcInput'),
-  btnBulkUPC:        document.getElementById('btnBulkUPC'),
   btnAddLines       : document.getElementById('btnAddLines'),
-
+  btnBulkUPC        : document.getElementById('btnBulkUPC'),
   lineFilter        : document.getElementById('lineFilter'),
   linesTbody        : document.getElementById('linesTbody'),
   statusSummary     : document.getElementById('statusSummary'),
-
-  // bulk controls that still exist
   bulkRecordType    : document.getElementById('bulkRecordType'),
   bulkPromoPrice    : document.getElementById('bulkPromoPrice'),
   bulkPromoQty      : document.getElementById('bulkPromoQty'),
@@ -44,31 +40,46 @@ const els = {
 
 /* ---------- quick Bulk‑UPC inline field ---------- */
 if (els.btnBulkUPC && els.bulkUpcQuick){
-  els.btnBulkUPC.addEventListener('click', () => {
-    const raw = els.bulkUpcQuick.value.trim();
-    if(!raw) return;
-    const codes = raw.split(/[\s,]+/).filter(Boolean);
-    els.bulkUpcQuick.value = '';      // clear box
 
-    const b = getCurrentBatch();
-    codes.forEach(u=>{
-      const line = blankLine();
-      line.recordType = RECORD_TYPES.includes(els.bulkRecordType?.value)
-                          ? els.bulkRecordType.value : 'SALE';
-      line.upc = canonUPC(u);
-      const itm = masterItems?.get(line.upc);
-      if(itm){
-        line.brand = itm.brand;
-        line.description = itm.description;
-        line.regPrice = itm.reg_price;
-      }
-      b.lines.push(line);
-    });
-    scheduleSave(b);
-    renderLines();
+  // ► Click on the blue “Bulk UPC Add” button
+  els.btnBulkUPC.addEventListener('click', handleQuickUPC);
+
+  // ► Pressing ⏎ Enter while the input is focused
+  els.bulkUpcQuick.addEventListener('keydown', e => {
+    if (e.key === 'Enter'){           // only on Enter
+      e.preventDefault();             // don’t submit the form
+      handleQuickUPC();
+    }
   });
 }
 
+/* shared routine – moves codes from the quick box into the table */
+function handleQuickUPC(){
+  const raw = els.bulkUpcQuick.value.trim();
+  if(!raw) return;
+
+  const codes = raw.split(/[\s,]+/).filter(Boolean);
+  els.bulkUpcQuick.value = '';        // clear the box after use
+
+  const b = getCurrentBatch();
+  codes.forEach(u=>{
+    const line = blankLine();
+    line.recordType = RECORD_TYPES.includes(els.bulkRecordType?.value)
+                        ? els.bulkRecordType.value : 'SALE';
+    line.upc = canonUPC(u);
+
+    const itm = masterItems?.get(line.upc);
+    if(itm){
+      line.brand       = itm.brand;
+      line.description = itm.description;
+      line.regPrice    = itm.reg_price;
+    }
+    b.lines.push(line);
+  });
+
+  scheduleSave(b);
+  renderLines();
+}
 // Modals
 const modalOverlay   = document.getElementById('modalOverlay');
 const modalAddLines  = document.getElementById('modalAddLines');
