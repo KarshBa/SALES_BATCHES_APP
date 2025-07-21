@@ -17,6 +17,13 @@ const els = {
 
 const COUNTS_API = 'https://inventory-counts.onrender.com/api/slists';
 
+function close(id){
+  const box      = document.getElementById(id);
+  const overlay  = document.getElementById('modalOverlay');
+  box?.classList.add('hidden');
+  overlay?.classList.add('hidden');
+}
+
 /* ---- modal helpers (re‑use existing overlay) ---- */
 const overlay      = document.getElementById('modalOverlay');
 const modalPick    = document.getElementById('modalPickList');
