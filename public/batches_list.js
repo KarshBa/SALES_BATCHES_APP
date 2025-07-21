@@ -58,10 +58,9 @@ function createBatch(name){
   if(!name) { toast('Enter a name','error'); return null; }
   if(batches.some(b=>b.name===name)){ toast('Name already exists','error'); return null; }
   const id = crypto.randomUUID?.() || Math.random().toString(36).slice(2);
-  const lines = [];
-  for(let i=0;i<5;i++){
-    lines.push({ recordType:'', upc:'', brand:'', description:'', regPrice:'', promoPrice:'', promoQty:'', startDate:'', endDate:'' });
-  }
+  const lines = [
+    { recordType:'', upc:'', brand:'', description:'', regPrice:'', promoPrice:'', promoQty:'', startDate:'', endDate:'' }
+  ];
   const batch = { id, name, lines, updatedAt: new Date().toISOString() };
   batches.push(batch);
   saveLocal();
