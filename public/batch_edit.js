@@ -88,13 +88,21 @@ function upsertLine(batch, newLine){
   const i = batch.lines.findIndex(l => canonUPC(l.upc) === canonUPC(newLine.upc));
   if (i !== -1) batch.lines[i] = newLine;   // overwrite existing
   else           batch.lines.push(newLine); // otherwise append
+ /* ▸ drop the initial empty row once we have at least one real line */
+  if (batch.lines.length > 1 && !batch.lines[0].upc){
+    batch.lines.shift();
+  }
 }
 
 function firstEmptyLine(batch){
   return batch.lines.find(l => !l.upc && !l.brand && !l.description);
 }
 
-const roundPromo = p => Math.floor(p*100 - 1) / 100;
+const roundPromo = p => {
+  // round to nearest $ X.09  ( e.g. 3.27 → 3.09 ,  3.78 → 3.69 )
+  const base = Math.round((p - 0.09) * 100) / 100;
+  return +(base.toFixed(2));
+};
 
 // Modals
 const modalOverlay   = document.getElementById('modalOverlay');
@@ -414,7 +422,7 @@ upcInput.addEventListener('keydown', e => {
         ln.description = itm.description;
         ln.regPrice    = itm.reg_price;
       }
-      b.lines.push(ln);
+      upsertLine(b, ln);
     });
     scheduleSave(b);
     renderLines();
@@ -532,7 +540,7 @@ els.masterSuggestions.addEventListener('click', e=>{
   l.upc = code;
   const itm = masterItems.get(code);
   l.brand = itm.brand; l.description = itm.description; l.regPrice = itm.reg_price;
-  b.lines.push(l);
+  upsertLine(b, ln);
   scheduleSave(b); renderLines();
 
   // reset UI
@@ -604,10 +612,10 @@ async function init(){
   let batch = getCurrentBatch();
   if(!batch){
     // fallback: create a blank one if deep link invalid
-    batch = { id: currentBatchId || uuidv4(), name: 'Unnamed', 
-        lines: [ blankLine() ],
-        updatedAt: new Date().toISOString() };
-    batch.lines.push(blankLine());
+    batch = { id: currentBatchId || uuidv4(),
+              name: 'Unnamed',
+              lines: [ blankLine() ],          
+              updatedAt: new Date().toISOString() };
     batches.push(batch);
   }
   els.currentBatchLabel.textContent = batch.name;
