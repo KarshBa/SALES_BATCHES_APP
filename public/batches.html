@@ -161,8 +161,9 @@
 
 <!-- Toast container -->
 <div id="toastContainer" class="toast-container" aria-live="polite"></div>
-  <!-- ─────────── List‑picker modal ─────────── -->
-<div class="modal hidden" id="modalPickList" role="dialog" aria-modal="true" aria-labelledby="pickListTitle">
+<div id="modalOverlay" class="overlay hidden"></div>
+
+<div id="modalPickList" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="pickListTitle">
   <h2 id="pickListTitle">Create Batch From List</h2>
   <p>Select one of your Inventory Counts <em>Simple‑Lists</em>:</p>
   <select id="simpleListsSelect" style="width:100%;max-width:340px;"></select>
@@ -171,7 +172,6 @@
     <button class="close-modal" data-close="#modalPickList">Cancel</button>
   </div>
 </div>
-
 <script type="module" src="batches_list.js"></script>
 </body>
 </html>
