@@ -360,8 +360,11 @@ if(els.btnBulkUPC){
     if(ta) ta.value = '';
     openModal(modalBulkUPC);
   }
-if (els.bulkUpcInput){
-  els.bulkUpcInput.addEventListener('keydown', e => {
+});
+  
+const upcInput = document.getElementById('bulkUpcInput');
+if (upcInput){
+upcInput.addEventListener('keydown', e => {
     if (e.key !== 'Enter') return;
     e.preventDefault();
 
