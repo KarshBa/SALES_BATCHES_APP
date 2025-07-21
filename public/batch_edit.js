@@ -470,25 +470,35 @@ const renderSuggestions = (hits)=>{
   ul.classList.toggle('hidden', !hits.length);
 };
 
-const queryMaster = term=>{
-  if(!masterItems) return [];
-  term = term.toLowerCase();
-  const results = [];
-  const startsNum = /^\d/.test(term);
+const queryMaster = term => {
+  if (!masterItems) return [];
+  const t = term.toLowerCase().trim();
+  if (!t) return [];
 
-  masterItems.forEach(v=>{
-    if(startsNum){
-      if(v.upc.startsWith(term)) results.push(v);
-      else if(v.brand.toLowerCase().includes(term) || v.description.toLowerCase().includes(term))
-        results.push(v);
-    }else{
-      if(v.brand.toLowerCase().includes(term) || v.description.toLowerCase().includes(term) ||
-         v.upc.includes(term))
-        results.push(v);
+  const hits = [];
+  const startsNum = /^\d+$/.test(t);          // all digits?
+
+  /* --- 1) exact UPC match when user types digits -------- */
+  if (startsNum) {
+    const exact = masterItems.get( canonUPC(t) );   // 🆕 pad‑to‑13
+    if (exact) hits.push(exact);
+  }
+
+  /* --- 2) run a simple scan (skip dupes we already have) */
+  masterItems.forEach(it => {
+    if (hits.includes(it)) return;            // skip exact already pushed
+
+    const b = it.brand.toLowerCase();
+    const d = it.description.toLowerCase();
+    if (
+      (startsNum && it.upc.includes(t)) ||
+      b.includes(t) || d.includes(t)
+    ){
+      hits.push(it);
     }
   });
-  // simple relevance: exact UPC at top, then brand/desc hits
-  return results.slice(0,50);
+
+  return hits.slice(0, 50);                   // cap list
 };
 
 els.masterSearch.addEventListener('input', autoDebounce(e=>{
