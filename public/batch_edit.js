@@ -184,6 +184,15 @@ function canonUPC(raw){
   return d.padStart(13, '0');        // any other length → left‑pad
 }
 
+/* ---------- gather all validation issues for a batch ---------- */
+function collectValidation(batch){
+  const issues = [];
+  batch.lines.forEach((ln, idx) => {
+    issues.push(...validateLine({ ...ln }, idx));
+  });
+  return issues;
+}
+
 /* ---------- Validation ---------- */
 function validateLine(line, index){
   const issues   = [];
