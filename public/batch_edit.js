@@ -262,6 +262,10 @@ function updateStatus(){
   let invalid = 0;
   b.lines.forEach((l,i)=> { if(validateLine({...l},i).length) invalid++; });
   els.statusSummary.textContent = `Lines: ${b.lines.length} | Invalid: ${invalid} | Last Saved: ${b.updatedAt ? new Date(b.updatedAt).toLocaleTimeString(): '—'}`;
+ /*➜ enable Export button whenever at least one line exists          */
+  if (els.btnExport){
+    els.btnExport.disabled = (b.lines.length === 0);
+  }
 }
 
 /* ---------- Editing Events ---------- */
