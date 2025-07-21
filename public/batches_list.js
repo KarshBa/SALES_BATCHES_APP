@@ -17,21 +17,33 @@ const els = {
 
 const COUNTS_API = 'https://inventory-counts.onrender.com/api/slists';
 
-function close(id){
-  const box      = document.getElementById(id);
-  const overlay  = document.getElementById('modalOverlay');
-  box?.classList.add('hidden');
-  overlay?.classList.add('hidden');
+/* ------------------------------------------------- */
+/*  Simple modal helpers – one overlay, many modals  */
+/* ------------------------------------------------- */
+
+const overlay = document.getElementById('modalOverlay');
+
+/** Show the given modal element (id or node) */
+export function openModal(target){
+  const m = typeof target === 'string' ? document.getElementById(target) : target;
+  if (!m) return;
+  m.classList.remove('hidden');
+  overlay?.classList.remove('hidden');
 }
 
-/* ---- modal helpers (re‑use existing overlay) ---- */
-const overlay      = document.getElementById('modalOverlay');
-const modalPick    = document.getElementById('modalPickList');
-const selSimple    = document.getElementById('simpleListsSelect');
-function open(m){ m.classList.remove('hidden'); overlay.classList.remove('hidden'); }
-function close(m){ m.classList.add('hidden');    overlay.classList.add('hidden');  }
+/** Hide the given modal element (id or node) */
+export function closeModal(target){
+  const m = typeof target === 'string' ? document.getElementById(target) : target;
+  if (!m) return;
+  m.classList.add('hidden');
+  // if no other modals are visible, also hide overlay
+  if (!document.querySelector('.modal:not(.hidden)'))
+    overlay?.classList.add('hidden');
+}
+
+/* --- wire up generic close buttons — data‑close="#modalId" ------- */
 document.querySelectorAll('.close-modal').forEach(btn=>{
-  btn.addEventListener('click', ()=> close(document.querySelector(btn.dataset.close)));
+  btn.addEventListener('click', () => closeModal(btn.dataset.close));
 });
 
 function toast(msg, type='info', ms=3500){
