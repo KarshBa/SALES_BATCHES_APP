@@ -15,6 +15,18 @@ const els = {
   summary: document.getElementById('batchSummary')
 };
 
+const COUNTS_API = 'https://inventory-counts.onrender.com/api/slists';
+
+/* ---- modal helpers (re‑use existing overlay) ---- */
+const overlay      = document.getElementById('modalOverlay');
+const modalPick    = document.getElementById('modalPickList');
+const selSimple    = document.getElementById('simpleListsSelect');
+function open(m){ m.classList.remove('hidden'); overlay.classList.remove('hidden'); }
+function close(m){ m.classList.add('hidden');    overlay.classList.add('hidden');  }
+document.querySelectorAll('.close-modal').forEach(btn=>{
+  btn.addEventListener('click', ()=> close(document.querySelector(btn.dataset.close)));
+});
+
 function toast(msg, type='info', ms=3500){
   const cont = document.getElementById('toastContainer');
   const t = document.createElement('div');
@@ -218,6 +230,57 @@ els.tbody.addEventListener('click', e=>{
 els.tbody.addEventListener('change', e=>{
   if(e.target.classList.contains('rowchk')){
     updateBulkDeleteState();
+  }
+});
+
+/* ---------- Create‑from‑List flow ---------- */
+document.getElementById('btnCreateFromList').addEventListener('click', async ()=>{
+  try{
+    selSimple.innerHTML = '<option>Loading…</option>';
+    open(modalPick);
+    // 1) fetch *all* simple‑lists
+    const res  = await fetch(COUNTS_API, {cache:'no-store'});
+    if(!res.ok) throw new Error(res.status);
+    const lists = await res.json();                 // { listName: {…} }
+    const names = Object.keys(lists);
+    if(!names.length){
+      selSimple.innerHTML = '<option>(no lists found)</option>'; return;
+    }
+    selSimple.innerHTML = names.map(n=>`<option value="${n}">${n}</option>`).join('');
+  }catch(err){
+    toast('Could not fetch lists','error');
+    close(modalPick);
+  }
+});
+
+document.getElementById('confirmPickList').addEventListener('click', async ()=>{
+  const listName = selSimple.value;
+  if(!listName) return;
+  try{
+    // 2) fetch that specific list
+    const res = await fetch(`${COUNTS_API}/${encodeURIComponent(listName)}`,{cache:'no-store'});
+    if(!res.ok) throw new Error(res.status);
+    const data = await res.json();   // { items:{ upc:{code,brand,description,price} … } }
+    const lines = Object.values(data.items||{}).map(it=>({
+      recordType:'REG',
+      upc: it.code,
+      brand: it.brand || '',
+      description: it.description || '',
+      regPrice: it.price ?? '',
+      promoPrice:'', promoQty:'', startDate:'', endDate:''
+    }));
+    if(!lines.length){ toast('List is empty','error'); return; }
+
+    // 3) create batch with those lines
+    const batch = createBatch(listName);
+    if(!batch) return;
+    batch.lines = lines;
+    saveLocal();
+
+    close(modalPick);
+    location.href = `sales_batches.html?batch=${batch.id}`;
+  }catch(e){
+    toast('Failed to import list','error');
   }
 });
 
