@@ -22,6 +22,7 @@ const COUNTS_API = 'https://inventory-counts.onrender.com/api/slists';
 /* ------------------------------------------------- */
 
 const overlay = document.getElementById('modalOverlay');
+const modalPick = document.getElementById('modalPickList');
 
 /** Show the given modal element (id or node) */
 export function openModal(target){
