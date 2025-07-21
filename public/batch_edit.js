@@ -422,7 +422,7 @@ upcInput.addEventListener('keydown', e => {
         ln.description = itm.description;
         ln.regPrice    = itm.reg_price;
       }
-      upsertLine(b, ln);
+      upsertLine(b, l);
     });
     scheduleSave(b);
     renderLines();
