@@ -25,6 +25,9 @@ let saveTimer = null;
 const els = {
   currentBatchLabel : document.getElementById('currentBatchLabel'),
   btnExport         : document.getElementById('btnExport'),
+  bulkUpcQuick      : document.getElementById('bulkUpcQuick'),
+  btnBulkUPC        : document.getElementById('btnBulkUPC'),
+  btnAddLines       : document.getElementById('btnAddLines'),
 
   lineFilter        : document.getElementById('lineFilter'),
   linesTbody        : document.getElementById('linesTbody'),
@@ -37,6 +40,33 @@ const els = {
   bulkStartDate     : document.getElementById('bulkStartDate'),
   bulkEndDate       : document.getElementById('bulkEndDate')
 };
+
+/* ---------- quick Bulk‑UPC inline field ---------- */
+if (els.btnBulkUPC && els.bulkUpcQuick){
+  els.btnBulkUPC.addEventListener('click', () => {
+    const raw = els.bulkUpcQuick.value.trim();
+    if(!raw) return;
+    const codes = raw.split(/[\s,]+/).filter(Boolean);
+    els.bulkUpcQuick.value = '';      // clear box
+
+    const b = getCurrentBatch();
+    codes.forEach(u=>{
+      const line = blankLine();
+      line.recordType = RECORD_TYPES.includes(els.bulkRecordType?.value)
+                          ? els.bulkRecordType.value : 'SALE';
+      line.upc = canonUPC(u);
+      const itm = masterItems?.get(line.upc);
+      if(itm){
+        line.brand = itm.brand;
+        line.description = itm.description;
+        line.regPrice = itm.reg_price;
+      }
+      b.lines.push(line);
+    });
+    scheduleSave(b);
+    renderLines();
+  });
+}
 
 // Modals
 const modalOverlay   = document.getElementById('modalOverlay');
