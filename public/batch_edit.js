@@ -35,7 +35,10 @@ const els = {
   bulkPromoPrice    : document.getElementById('bulkPromoPrice'),
   bulkPromoQty      : document.getElementById('bulkPromoQty'),
   bulkStartDate     : document.getElementById('bulkStartDate'),
-  bulkEndDate       : document.getElementById('bulkEndDate')
+  bulkEndDate       : document.getElementById('bulkEndDate'),
+  bulkPercentOff    : document.getElementById('bulkPercentOff'),
+  masterSearch      : document.getElementById('masterSearch'),
+  masterSuggestions : document.getElementById('masterSuggestions')
 };
 
 /* ---------- quick Bulk‑UPC inline field ---------- */
@@ -80,6 +83,9 @@ function handleQuickUPC(){
   scheduleSave(b);
   renderLines();
 }
+
+const roundPromo = p => Math.floor(p*100 - 1) / 100;
+
 // Modals
 const modalOverlay   = document.getElementById('modalOverlay');
 const modalAddLines  = document.getElementById('modalAddLines');
@@ -427,6 +433,22 @@ upcInput.addEventListener('keydown', e => {
   });
 }
 
+/* === %‑OFF bulk apply === */
+els.bulkPercentOff.addEventListener('input', autoDebounce(() => {
+  const pct = parseFloat(els.bulkPercentOff.value);
+  if (isNaN(pct) || pct <= 0) return;
+
+  const b = getCurrentBatch();
+  b.lines.forEach(l=>{
+    const base = parseFloat(l.regPrice);
+    if (!isNaN(base) && base>0){
+      l.promoPrice = roundPromo(base * (1 - pct/100)).toFixed(2);
+    }
+  });
+  scheduleSave(b);
+  renderLines();
+}, 200));
+
 /* ---------- Add Lines (optional button) ---------- */
 if (els.btnAddLines){
   els.btnAddLines.addEventListener('click', () => {
@@ -436,6 +458,62 @@ if (els.btnAddLines){
     renderLines();
   });
 }
+
+/* === master list search === */
+const renderSuggestions = (hits)=>{
+  const ul = els.masterSuggestions;
+  ul.innerHTML = hits.map(h=>`
+    <li data-code="${h.upc}">
+      <strong>${escapeHtml(h.brand||'')}</strong> – ${escapeHtml(h.description)}
+      <span style="float:right;color:#777;">${h.upc}</span>
+    </li>`).join('');
+  ul.classList.toggle('hidden', !hits.length);
+};
+
+const queryMaster = term=>{
+  if(!masterItems) return [];
+  term = term.toLowerCase();
+  const results = [];
+  const startsNum = /^\d/.test(term);
+
+  masterItems.forEach(v=>{
+    if(startsNum){
+      if(v.upc.startsWith(term)) results.push(v);
+      else if(v.brand.toLowerCase().includes(term) || v.description.toLowerCase().includes(term))
+        results.push(v);
+    }else{
+      if(v.brand.toLowerCase().includes(term) || v.description.toLowerCase().includes(term) ||
+         v.upc.includes(term))
+        results.push(v);
+    }
+  });
+  // simple relevance: exact UPC at top, then brand/desc hits
+  return results.slice(0,50);
+};
+
+els.masterSearch.addEventListener('input', autoDebounce(e=>{
+  const t = e.target.value.trim();
+  renderSuggestions(t ? queryMaster(t) : []);
+}, 120));
+
+els.masterSuggestions.addEventListener('click', e=>{
+  const li = e.target.closest('li[data-code]');
+  if(!li) return;
+  const code = li.dataset.code;
+
+  // push selected item as a new line
+  const b = getCurrentBatch();
+  const l = blankLine();
+  l.recordType = els.bulkRecordType.value || 'SALE';
+  l.upc = code;
+  const itm = masterItems.get(code);
+  l.brand = itm.brand; l.description = itm.description; l.regPrice = itm.reg_price;
+  b.lines.push(l);
+  scheduleSave(b); renderLines();
+
+  // reset UI
+  els.masterSearch.value=''; renderSuggestions([]);
+});
 
 /* ---------- Validation / Export ---------- */
 if (els.btnValidate) {
@@ -452,8 +530,7 @@ function showIssues(issues){
 function needsQuote(v){ return /[",\r\n]/.test(String(v)); }
 function csvForBatch(batch){
   const lines = [EXPORT_HEADERS.join(',')];
-  batch.lines.forEach((l,i)=>{
-    if(validateLine({...l}, i).length) return;
+  batch.lines.forEach(l=>{
     const row = [
       l.recordType,
       l.canonUPC(l.upc),
