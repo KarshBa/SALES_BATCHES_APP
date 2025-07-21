@@ -565,7 +565,7 @@ function csvForBatch(batch){
   batch.lines.forEach(l=>{
     const row = [
       l.recordType,
-      l.canonUPC(l.upc),
+      canonUPC(l.upc),
       l.promoPrice ?? '',
       l.promoQty || 1,
       l.startDate || '',
