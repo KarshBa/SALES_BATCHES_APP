@@ -17,34 +17,30 @@ const els = {
 
 const COUNTS_API = 'https://inventory-counts.onrender.com/api/slists';
 
-/* ------------------------------------------------- */
-/*  Simple modal helpers – one overlay, many modals  */
-/* ------------------------------------------------- */
+/* ------------------------------------------------------------------
+                           modal helpers
+   ------------------------------------------------------------------ */
+const overlay      = document.getElementById('modalOverlay');
+const modalPick    = document.getElementById('modalPickList');      // <div id="modalPickList">
+const selSimple    = document.getElementById('simpleListsSelect');  // <select …>
 
-const overlay = document.getElementById('modalOverlay');
-const modalPick = document.getElementById('modalPickList');
-
-/** Show the given modal element (id or node) */
-export function openModal(target){
-  const m = typeof target === 'string' ? document.getElementById(target) : target;
-  if (!m) return;
-  m.classList.remove('hidden');
-  overlay?.classList.remove('hidden');
+function modalOpen(el){            // ← NEW NAME
+  el.classList.remove('hidden');
+  overlay.classList.remove('hidden');
+}
+function modalClose(el){           // ← NEW NAME
+  el.classList.add('hidden');
+  overlay.classList.add('hidden');
 }
 
-/** Hide the given modal element (id or node) */
-export function closeModal(target){
-  const m = typeof target === 'string' ? document.getElementById(target) : target;
-  if (!m) return;
-  m.classList.add('hidden');
-  // if no other modals are visible, also hide overlay
-  if (!document.querySelector('.modal:not(.hidden)'))
-    overlay?.classList.add('hidden');
-}
-
-/* --- wire up generic close buttons — data‑close="#modalId" ------- */
+overlay.addEventListener('click', () => {
+  const openModalEl = document.querySelector('.modal:not(.hidden)');
+  if (openModalEl) modalClose(openModalEl);
+});
 document.querySelectorAll('.close-modal').forEach(btn=>{
-  btn.addEventListener('click', () => closeModal(btn.dataset.close));
+  btn.addEventListener('click', () =>
+    modalClose(document.querySelector(btn.dataset.close))
+  );
 });
 
 function toast(msg, type='info', ms=3500){
@@ -257,7 +253,7 @@ els.tbody.addEventListener('change', e=>{
 document.getElementById('btnCreateFromList').addEventListener('click', async ()=>{
   try{
     selSimple.innerHTML = '<option>Loading…</option>';
-    open(modalPick);
+    modalOpen(modalPick);
     // 1) fetch *all* simple‑lists
     const res  = await fetch(COUNTS_API, {cache:'no-store'});
     if(!res.ok) throw new Error(res.status);
@@ -269,7 +265,7 @@ document.getElementById('btnCreateFromList').addEventListener('click', async ()=
     selSimple.innerHTML = names.map(n=>`<option value="${n}">${n}</option>`).join('');
   }catch(err){
     toast('Could not fetch lists','error');
-    close(modalPick);
+    modalClose(modalPick);
   }
 });
 
@@ -295,9 +291,10 @@ document.getElementById('confirmPickList').addEventListener('click', async ()=>{
     const batch = createBatch(listName);
     if(!batch) return;
     batch.lines = lines;
+    batch.updatedAt = new Date().toISOString();
     saveLocal();
 
-    close(modalPick);
+   modalClose(modalPick);
     location.href = `sales_batches.html?batch=${batch.id}`;
   }catch(e){
     toast('Failed to import list','error');
