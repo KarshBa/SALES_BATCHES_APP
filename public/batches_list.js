@@ -233,6 +233,6 @@ init();
 /* Refresh list when you come back */
 /* ------------------------------ */
 window.addEventListener('pageshow', () => {
-  // fires on the first load *and* when the user navigates back
+  loadLocal();
   render();
 });
