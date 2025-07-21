@@ -15,6 +15,7 @@
     background: var(--sunflower);
     color: #fff;
     text-align: center;
+    justify-content:center;
     padding: 1.1rem 0 1rem;
     margin: 0 0 1.25rem;
   }
@@ -185,6 +186,14 @@ a.button-link:hover {
   display:flex; gap:.4rem; align-items:stretch;
 }
 .bulk-upc-inline input{ flex:1; }
+.suggest-list{
+  position:absolute;left:0;right:0;top:100%;
+  background:#fff;border:1px solid #ccc;max-height:220px;
+  overflow-y:auto;font-size:.85rem;z-index:10;
+}
+.suggest-list li{padding:.25rem .4rem;cursor:pointer;}
+.suggest-list li:hover{background:#f5f5f5;}
+.hidden{display:none;}
 </style>
 </head>
 <body>
@@ -199,16 +208,37 @@ a.button-link:hover {
       <h2>Batch Name</h2>
       <div id="currentBatchLabel" class="batch-title" aria-live="polite">—</div>
     </div>
-    <div class="editor-controls">
+  <div class="editor-controls">
+    <div class="percent-off-block" style="display:flex;gap:.35rem;align-items:center;">
+  <label for="bulkPercentOff" style="font-size:.75rem;">% Off</label>
+  <input id="bulkPercentOff"
+         type="number"
+         min="1" max="99"
+         step="1"
+         placeholder="20"
+         title="enter 20 for 20 % off"
+         style="width:5rem;">
+</div>
+
+<!-- Search‑master autocompleter -->
+<div class="master-search-block" style="position:relative;flex:1;max-width:260px;">
+  <input id="masterSearch"
+         type="search"
+         placeholder="Search brand, desc, UPC…"
+         autocomplete="off"
+         style="width:100%;">
+  <ul id="masterSuggestions"
+      class="suggest-list hidden"></ul>
+</div>
       <button id="btnExport" disabled>Export CSV</button>
       <div class="bulk-upc-inline">
-  <input id="bulkUpcQuick"
+    <input id="bulkUpcQuick"
          type="text"
          placeholder="UPC, UPC …"
          style="width:16rem"
          title="comma / space / return separated UPCs">
-  <button id="btnBulkUPC">Add UPCs</button>
-</div>
+    <button id="btnBulkUPC">Add UPCs</button>
+  </div>
       <a href="batches.html" class="secondary button-link">Back to Batches</a>
     </div>
   </div>
