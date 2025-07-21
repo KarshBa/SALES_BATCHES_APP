@@ -27,7 +27,7 @@ const els = {
   btnExport         : document.getElementById('btnExport'),
   bulkUpcQuick      : document.getElementById('bulkUpcQuick'),
   bulkUpcInput:      document.getElementById('bulkUpcInput'),
-  btnBulkUPC:        document.getElementById('btnBulkUPC')
+  btnBulkUPC:        document.getElementById('btnBulkUPC'),
   btnAddLines       : document.getElementById('btnAddLines'),
 
   lineFilter        : document.getElementById('lineFilter'),
