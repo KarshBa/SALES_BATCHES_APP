@@ -240,7 +240,7 @@ function renderLines(){
       <td><input class="cell-promoQty" type="number" min="1" value="${escapeAttr(ln.promoQty)}" /></td>
       <td><input class="cell-startDate" type="date" value="${escapeAttr(ln.startDate)}" /></td>
       <td><input class="cell-endDate" type="date" value="${escapeAttr(ln.endDate)}" /></td>
-      <td><button class="row-del" title="Delete row">&times;</button></td>
+      <td><button class="row-del" title="Delete row">🗑️</button></td>
     `;
     if(rowIssues.length){
       rowIssues.forEach(is=>{
