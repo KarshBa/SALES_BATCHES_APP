@@ -54,7 +54,13 @@
     font-weight: 600;
     word-break: break-word;
   }
-
+  .box-lg{
+    width:16rem;
+    padding:.45rem .55rem;
+    border:1px solid #ccc;
+    border-radius:6px;
+    font-size:1rem;
+  }
   .editor-controls {
     display: flex;
     flex-wrap: wrap;
@@ -226,6 +232,7 @@ a.button-link:hover {
          type="search"
          placeholder="Search brand, desc, UPC…"
          autocomplete="off"
+         class="box-lg"
          style="width:100%;">
   <ul id="masterSuggestions"
       class="suggest-list hidden"></ul>
@@ -233,6 +240,7 @@ a.button-link:hover {
       <div class="bulk-upc-inline">
     <input id="bulkUpcQuick"
          type="text"
+         class="box-lg"
          placeholder="UPC, UPC …"
          style="width:16rem"
          title="comma / space / return separated UPCs">
