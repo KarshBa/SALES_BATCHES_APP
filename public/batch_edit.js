@@ -21,6 +21,43 @@ let masterItems = null;
 let masterLoaded = false;
 let saveTimer = null;
 
+const REMOTE_BASE = '/api/batches';
+
+/* PUT first, fallback to POST if it doesn't exist yet */
+async function saveRemote(batch){
+  try{
+    let r = await fetch(`${REMOTE_BASE}/${batch.id}`, {
+      method:'PUT',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(batch)
+    });
+    if (r.status === 404) {
+      r = await fetch(REMOTE_BASE, {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(batch)
+      });
+    }
+  }catch(e){
+    console.warn('Remote save failed', e);
+  }
+}
+
+/* Merge server batches into local list (no duplicates) */
+async function hydrateFromServer(){
+  try{
+    const r = await fetch(REMOTE_BASE, {cache:'no-store'});
+    if(!r.ok) return;
+    const remote = await r.json();          // [{id,name,lines,…},…]
+    const map = new Map(batches.map(b=>[b.id,b]));   // local first
+    remote.forEach(b => map.set(b.id, b));           // overwrite/insert
+    batches = [...map.values()];
+    saveToLocal();
+  }catch(e){
+    console.warn('Could not hydrate from server', e);
+  }
+}
+
 /* ---------- DOM ---------- */
 const els = {
   currentBatchLabel : document.getElementById('currentBatchLabel'),
@@ -193,12 +230,26 @@ function blankLine(){
   return { recordType:'', upc:'', brand:'', description:'', regPrice:'', promoPrice:'', promoQty:'', startDate:'', endDate:'' };
 }
 
+async function saveRemote(batch){
+  try{
+    // if it’s new, POST; otherwise PUT
+    const method = await isOnServer(batch.id) ? 'PUT' : 'POST';
+    const url    = method === 'POST' ? '/api/batches' : `/api/batches/${batch.id}`;
+    await fetch(url, {
+      method,
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(batch)
+    });
+  }catch(e){ console.warn('Remote save failed', e); }
+}
+
 function scheduleSave(b){
   if(saveTimer) clearTimeout(saveTimer);
-  saveTimer = setTimeout(()=>{
+  saveTimer = setTimeout(async ()=>{
     b.updatedAt = new Date().toISOString();
     saveToLocal();
     updateStatus();
+    await saveRemote(b);
   }, AUTO_SAVE_DEBOUNCE);
 }
 
@@ -661,6 +712,8 @@ function escapeAttr(s){ return escapeHtml(s); }
 /* ---------- Init ---------- */
 async function init(){
   loadFromLocal();
+  await hydrateFromServer();  // merge remote → local
+  
   let batch = getCurrentBatch();
   if(!batch){
     // fallback: create a blank one if deep link invalid
