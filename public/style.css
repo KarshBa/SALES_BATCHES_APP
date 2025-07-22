@@ -79,16 +79,20 @@ button:disabled {
   opacity:.5;
   cursor: not-allowed;
 }
-.link-btn {
-  background:none;
-  border:none;
-  color:#0b63c5;
-  cursor:pointer;
-  padding:0;
-  font:inherit;
-  text-decoration:underline;
+.link-btn{
+  background: transparent;
+  border: none;
+  color: #0a5ad6;
+  padding: 0 .15rem;
+  border-radius: 4px;
+  cursor: pointer;
 }
-.link-btn:hover { color:#084a97; }
+.link-btn:hover,
+.link-btn:focus-visible{
+  background: rgba(0,0,0,.06);
+  color: #0a5ad6;
+  outline: none;
+}
 
 button.danger { background: var(--danger, #c62828); color:#fff; }
 button.danger:hover { background:#a81f1f; }
