@@ -555,10 +555,18 @@ els.masterSearch.addEventListener('input', autoDebounce(e=>{
   renderSuggestions(t ? queryMaster(t) : []);
 }, 120));
 
-els.masterSuggestions.addEventListener('click', e=>{
+els.masterSuggestions.addEventListener('mousedown', e => {
+  // mousedown avoids the input losing focus before we handle the click
   const li = e.target.closest('li[data-code]');
-  if(!li) return;
-  const code = li.dataset.code;
+  if (!li) return;
+  e.preventDefault();
+
+  addItemToBatch(li.dataset.code);
+
+  // clear UI
+  els.masterSearch.value = '';
+  renderSuggestions([]);
+});
 
   // push selected item as a new line
   const b = getCurrentBatch();
