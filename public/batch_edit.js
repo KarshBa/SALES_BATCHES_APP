@@ -580,7 +580,7 @@ els.masterSuggestions.addEventListener('mousedown', e => {
 
   // reset UI
   els.masterSearch.value=''; renderSuggestions([]);
-});
+);
 
 /* ---------- Validation / Export ---------- */
 if (els.btnValidate) {
