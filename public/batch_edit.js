@@ -23,26 +23,6 @@ let saveTimer = null;
 
 const REMOTE_BASE = '/api/batches';
 
-/* PUT first, fallback to POST if it doesn't exist yet */
-async function saveRemote(batch){
-  try{
-    let r = await fetch(`${REMOTE_BASE}/${batch.id}`, {
-      method:'PUT',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify(batch)
-    });
-    if (r.status === 404) {
-      r = await fetch(REMOTE_BASE, {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify(batch)
-      });
-    }
-  }catch(e){
-    console.warn('Remote save failed', e);
-  }
-}
-
 /* Merge server batches into local list (no duplicates) */
 async function hydrateFromServer(){
   try{
@@ -230,17 +210,34 @@ function blankLine(){
   return { recordType:'', upc:'', brand:'', description:'', regPrice:'', promoPrice:'', promoQty:'', startDate:'', endDate:'' };
 }
 
+// ---- Remote persistence -------------------------
+let serverCache = null;
+
+async function isOnServer(id){
+  if (!serverCache) {
+    try {
+      const r = await fetch('/api/batches', { cache: 'no-store' });
+      serverCache = r.ok ? await r.json() : [];
+    } catch {
+      serverCache = [];
+    }
+  }
+  return serverCache.some(b => b.id === id);
+}
+
 async function saveRemote(batch){
-  try{
-    // if it’s new, POST; otherwise PUT
+  try {
     const method = await isOnServer(batch.id) ? 'PUT' : 'POST';
     const url    = method === 'POST' ? '/api/batches' : `/api/batches/${batch.id}`;
     await fetch(url, {
       method,
-      headers: {'Content-Type':'application/json'},
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(batch)
     });
-  }catch(e){ console.warn('Remote save failed', e); }
+    serverCache = null;
+  } catch (e) {
+    console.warn('saveRemote failed', e);
+  }
 }
 
 function scheduleSave(b){
@@ -722,6 +719,7 @@ async function init(){
               lines: [ blankLine() ],          
               updatedAt: new Date().toISOString() };
     batches.push(batch);
+    await saveRemote(batch);
   }
   
   const oldName = batch.name;
