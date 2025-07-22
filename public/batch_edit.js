@@ -95,10 +95,11 @@ function upsertLine(batch, newLine){
 }
 
 function addItemToBatch(code){
-  const b   = getCurrentBatch();
+  const b    = getCurrentBatch();
   const line = firstEmptyLine(b) || blankLine();
+
   line.recordType = els.bulkRecordType.value || 'SALE';
-  line.upc = code;
+  line.upc        = code;
 
   const itm = masterItems.get(code);
   if (itm){
@@ -449,7 +450,7 @@ upcInput.addEventListener('keydown', e => {
         ln.description = itm.description;
         ln.regPrice    = itm.reg_price;
       }
-      upsertLine(b, l);
+      upsertLine(b, ln);
     });
     scheduleSave(b);
     renderLines();
@@ -556,14 +557,11 @@ els.masterSearch.addEventListener('input', autoDebounce(e=>{
 }, 120));
 
 els.masterSuggestions.addEventListener('mousedown', e => {
-  // mousedown avoids the input losing focus before we handle the click
   const li = e.target.closest('li[data-code]');
   if (!li) return;
-  e.preventDefault();
+  e.preventDefault();                 // avoid blur before we handle it
+  addItemToBatch(li.dataset.code);    // insert/update line
 
-  addItemToBatch(li.dataset.code);
-
-  // clear UI
   els.masterSearch.value = '';
   renderSuggestions([]);
 });
