@@ -117,11 +117,18 @@ function firstEmptyLine(batch){
   return batch.lines.find(l => !l.upc && !l.brand && !l.description);
 }
 
-const roundPromo = p => {
-  // round to nearest $ X.09  ( e.g. 3.27 → 3.09 ,  3.78 → 3.69 )
-  const base = Math.round((p - 0.09) * 100) / 100;
-  return +(base.toFixed(2));
-};
+// put this near your other helpers
+function roundTo09(value){
+  const cents = Math.round(Number(value) * 100);   // work in integers
+  if (!isFinite(cents)) return '';                 // guard
+
+  const dollarsCents = Math.floor(cents / 100) * 100; // xx00
+  const lower = dollarsCents + 9;                      // xx09
+  const upper = lower + 100;                           // next xx+1.09
+
+  const target = (cents - lower) <= (upper - cents) ? lower : upper;
+  return (target / 100).toFixed(2);
+}
 
 // Modals
 const modalOverlay   = document.getElementById('modalOverlay');
@@ -492,7 +499,7 @@ els.bulkPercentOff.addEventListener('input', autoDebounce(() => {
   b.lines.forEach(l=>{
     const base = parseFloat(l.regPrice);
     if (!isNaN(base) && base>0){
-      l.promoPrice = roundPromo(base * (1 - pct/100)).toFixed(2);
+      l.promoPrice = roundTo09(base * (1 - pct/100));
     }
   });
   scheduleSave(b);
