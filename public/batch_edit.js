@@ -117,17 +117,13 @@ function firstEmptyLine(batch){
   return batch.lines.find(l => !l.upc && !l.brand && !l.description);
 }
 
-// put this near your other helpers
-function roundTo09(value){
-  const cents = Math.round(Number(value) * 100);   // work in integers
-  if (!isFinite(cents)) return '';                 // guard
+function roundPromo(p){
+  const cents = Math.round(Number(p) * 100);   // work in pennies
+  if (!Number.isFinite(cents)) return '';
 
-  const dollarsCents = Math.floor(cents / 100) * 100; // xx00
-  const lower = dollarsCents + 9;                      // xx09
-  const upper = lower + 100;                           // next xx+1.09
-
-  const target = (cents - lower) <= (upper - cents) ? lower : upper;
-  return (target / 100).toFixed(2);
+  const last = cents % 10;
+  const newCents = last === 9 ? cents : (cents - last + 9); // bump to …9
+  return (newCents / 100).toFixed(2);
 }
 
 // Modals
@@ -499,7 +495,7 @@ els.bulkPercentOff.addEventListener('input', autoDebounce(() => {
   b.lines.forEach(l=>{
     const base = parseFloat(l.regPrice);
     if (!isNaN(base) && base>0){
-      l.promoPrice = roundTo09(base * (1 - pct/100));
+      l.promoPrice = roundPromo(base * (1 - pct / 100));
     }
   });
   scheduleSave(b);
