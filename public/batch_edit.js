@@ -94,6 +94,24 @@ function upsertLine(batch, newLine){
   }
 }
 
+function addItemToBatch(code){
+  const b   = getCurrentBatch();
+  const line = firstEmptyLine(b) || blankLine();
+  line.recordType = els.bulkRecordType.value || 'SALE';
+  line.upc = code;
+
+  const itm = masterItems.get(code);
+  if (itm){
+    line.brand       = itm.brand;
+    line.description = itm.description;
+    line.regPrice    = itm.reg_price;
+  }
+
+  upsertLine(b, line);
+  scheduleSave(b);
+  renderLines();
+}
+
 function firstEmptyLine(batch){
   return batch.lines.find(l => !l.upc && !l.brand && !l.description);
 }
