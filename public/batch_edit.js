@@ -566,20 +566,6 @@ els.masterSuggestions.addEventListener('mousedown', e => {
   renderSuggestions([]);
 });
 
-  // push selected item as a new line
-  const b = getCurrentBatch();
-  const l = firstEmptyLine(b) || blankLine();
-  l.recordType = els.bulkRecordType.value || 'SALE';
-  l.upc = code;
-  const itm = masterItems.get(code);
-  l.brand = itm.brand; l.description = itm.description; l.regPrice = itm.reg_price;
-  upsertLine(b, ln);
-  scheduleSave(b); renderLines();
-
-  // reset UI
-  els.masterSearch.value=''; renderSuggestions([]);
-);
-
 /* ---------- Validation / Export ---------- */
 if (els.btnValidate) {
   els.btnValidate.addEventListener('click', () => {
