@@ -2,6 +2,7 @@
 
 const LS_KEY = 'priceChangeBatches_v1';
 const EXPORT_HEADERS = ['Record Type','UPC','Promo_Price','Promo_Qty','Start_Date','End_Date'];
+const REMOTE_BASE = '/api/batches';
 
 let batches = [];
 
@@ -64,6 +65,39 @@ function saveLocal(){
   localStorage.setItem(LS_KEY, JSON.stringify(batches));
 }
 
+/* ---------- Remote helpers ---------- */
+async function hydrateFromServer(){
+  try{
+    const r = await fetch(REMOTE_BASE, { cache:'no-store' });
+    if(!r.ok) return;
+    const remote = await r.json();            // [{id,...}]
+    const map = new Map(batches.map(b=>[b.id,b]));
+    remote.forEach(b => map.set(b.id, b));    // server wins
+    batches = [...map.values()];
+    saveLocal();
+  }catch(e){ console.warn('hydrateFromServer failed', e); }
+}
+
+async function createRemote(batch){
+  await fetch(REMOTE_BASE, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(batch)
+  });
+}
+
+async function updateRemote(batch){
+  await fetch(`${REMOTE_BASE}/${batch.id}`, {
+    method:'PUT',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(batch)
+  });
+}
+
+async function deleteRemote(id){
+  await fetch(`${REMOTE_BASE}/${id}`, { method:'DELETE' });
+}
+
 /* ---------- Helpers ---------- */
 function findBatch(id){ return batches.find(b=>b.id===id); }
 function escapeHtml(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -82,7 +116,7 @@ function nextDuplicateName(name){
 }
 
 /* ---------- CRUD ---------- */
-function createBatch(name){
+async function createBatch(name){
   if(!name) { toast('Enter a name','error'); return null; }
   if(batches.some(b=>b.name===name)){ toast('Name already exists','error'); return null; }
   const id = crypto.randomUUID?.() || Math.random().toString(36).slice(2);
@@ -92,12 +126,13 @@ function createBatch(name){
   const batch = { id, name, lines, updatedAt: new Date().toISOString() };
   batches.push(batch);
   saveLocal();
+  await createRemote(batch);          // <<< push to disk
   toast('Batch created','success');
   render();
   return batch;
 }
 
-function duplicateBatch(id){
+async function duplicateBatch(id){
   const original = findBatch(id);
   if(!original) return;
   const clone = structuredClone(original);
@@ -106,19 +141,21 @@ function duplicateBatch(id){
   clone.updatedAt = new Date().toISOString();
   batches.push(clone);
   saveLocal();
+  await createRemote(clone);
   toast('Duplicated','success');
   render();
 }
 
-function deleteBatch(id){
+async function deleteBatch(id){
   batches = batches.filter(b=>b.id !== id);
   saveLocal();
+  await deleteRemote(id);
 }
 
-function deleteSelected(ids){
+async function deleteSelected(ids){
   if(!ids.length) return;
   if(!confirm(`Delete ${ids.length} batch(es)?`)) return;
-  ids.forEach(id => deleteBatch(id));
+  await Promise.all(ids.map(id => deleteBatch(id)));
   toast('Deleted','success');
   render();
 }
@@ -193,10 +230,10 @@ function updateBulkDeleteState(){
 
 /* ---------- Events ---------- */
 // click on “Create” button
-els.createBtn.addEventListener('click', () => {
+els.createBtn.addEventListener('click', async () => {
   const name = els.newName.value.trim();
   if (!name) { toast('Enter a batch name','error'); return; }
-  const b = createBatch(name);
+  const b = await createBatch(name);
   if (b) {
     els.newName.value = '';
     location.href = `sales_batches.html?batch=${b.id}`;   // open new batch
@@ -218,8 +255,8 @@ els.chkAll.addEventListener('change', ()=>{
   updateBulkDeleteState();
 });
 
-els.delSelected.addEventListener('click', ()=>{
-  deleteSelected(selectedIds());
+els.delSelected.addEventListener('click', async ()=>{
+  await deleteSelected(selectedIds());
   els.chkAll.checked = false;
 });
 
@@ -231,15 +268,15 @@ els.tbody.addEventListener('click', e=>{
   if(btn.classList.contains('open')){
     location.href = `sales_batches.html?batch=${id}`;
   } else if(btn.classList.contains('dup')){
-    duplicateBatch(id);
+  await duplicateBatch(id);
   } else if(btn.classList.contains('exp')){
     quickExport(id);
   } else if(btn.classList.contains('del')){
-    if(confirm('Delete this batch?')){
-      deleteBatch(id);
-      toast('Deleted','success');
-      render();
-    }
+  if(confirm('Delete this batch?')){
+    await deleteBatch(id);
+    toast('Deleted','success');
+    render();
+   }
   }
 });
 
@@ -293,6 +330,7 @@ document.getElementById('confirmPickList').addEventListener('click', async ()=>{
     batch.lines = lines;
     batch.updatedAt = new Date().toISOString();
     saveLocal();
+    await updateRemote(batch); // <<< persist modified lines
 
    modalClose(modalPick);
     location.href = `sales_batches.html?batch=${batch.id}`;
@@ -302,8 +340,9 @@ document.getElementById('confirmPickList').addEventListener('click', async ()=>{
 });
 
 /* ---------- Init ---------- */
-function init(){
-  loadLocal();
+async function init(){
+  loadLocal();               // fast local cache
+  await hydrateFromServer(); // then disk state
   render();
 }
 init();
@@ -311,7 +350,8 @@ init();
 /* ------------------------------ */
 /* Refresh list when you come back */
 /* ------------------------------ */
-window.addEventListener('pageshow', () => {
+window.addEventListener('pageshow', async () => {
   loadLocal();
+  await hydrateFromServer();
   render();
 });
