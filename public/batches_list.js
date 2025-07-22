@@ -261,7 +261,7 @@ els.delSelected.addEventListener('click', async ()=>{
 });
 
 /* delegate row actions */
-els.tbody.addEventListener('click', e=>{
+els.tbody.addEventListener('click', async e=>{
   const btn = e.target.closest('button');
   if(!btn) return;
   const id = btn.dataset.id;
@@ -325,7 +325,7 @@ document.getElementById('confirmPickList').addEventListener('click', async ()=>{
     if(!lines.length){ toast('List is empty','error'); return; }
 
     // 3) create batch with those lines
-    const batch = createBatch(listName);
+    const batch = await createBatch(listName);   // <- await here
     if(!batch) return;
     batch.lines = lines;
     batch.updatedAt = new Date().toISOString();
