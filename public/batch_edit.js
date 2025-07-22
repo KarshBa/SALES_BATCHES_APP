@@ -126,6 +126,29 @@ function roundPromo(p){
   return (newCents / 100).toFixed(2);
 }
 
+const DATE_SUFFIX_RE = /(?:[_\s-])?\d{4}-\d{2}-\d{2}$/;
+
+function stripDateSuffix(name){
+  return name.replace(DATE_SUFFIX_RE, '');
+}
+
+function oldestStartDate(batch){
+  const arr = batch.lines.map(l => l.startDate).filter(Boolean).sort();
+  return arr[0] || '';
+}
+
+function syncNameWithOldestDate(batch){
+  const base = stripDateSuffix(batch.name);
+  const oldest = oldestStartDate(batch);
+  const newName = oldest ? `${base}_${oldest}` : base;
+  if (batch.name !== newName){
+    batch.name = newName;
+    els.currentBatchLabel.textContent = newName;
+    saveToLocal();               // persist
+    // also update the title in the list page when you go back
+  }
+}
+
 // Modals
 const modalOverlay   = document.getElementById('modalOverlay');
 const modalAddLines  = document.getElementById('modalAddLines');
@@ -343,9 +366,14 @@ els.linesTbody.addEventListener('input', e=>{
   
   else if(e.target.classList.contains('cell-promoPrice')) line.promoPrice = e.target.value;
   else if(e.target.classList.contains('cell-promoQty')) line.promoQty = e.target.value;
-  else if(e.target.classList.contains('cell-startDate')) line.startDate = e.target.value;
-  else if(e.target.classList.contains('cell-endDate')) line.endDate = e.target.value;
-
+  else if(e.target.classList.contains('cell-startDate')){
+    line.startDate = e.target.value;
+    syncNameWithOldestDate(b);
+  }
+  else if(e.target.classList.contains('cell-endDate')){
+    line.endDate = e.target.value;
+    syncNameWithOldestDate(b);
+  }
   scheduleSave(b);
 
   const issues = validateLine({ ...line }, idx);
@@ -412,6 +440,7 @@ els.bulkStartDate.addEventListener('change', () => {
   if(!v) return;
   const b = getCurrentBatch();
   b.lines.forEach(l => l.startDate = v);
+  syncNameWithOldestDate(b);
   scheduleSave(b); renderLines();
 });
 
@@ -420,6 +449,7 @@ els.bulkEndDate.addEventListener('change', () => {
   if(!v) return;
   const b = getCurrentBatch();
   b.lines.forEach(l => l.endDate = v);
+  syncNameWithOldestDate(b);
   scheduleSave(b); renderLines();
 });
 
@@ -640,6 +670,11 @@ async function init(){
               updatedAt: new Date().toISOString() };
     batches.push(batch);
   }
+  
+  const oldName = batch.name;
+  syncNameWithOldestDate(batch);
+  if (batch.name !== oldName) saveToLocal();
+  
   els.currentBatchLabel.textContent = batch.name;
   await loadMaster();
   renderLines();
