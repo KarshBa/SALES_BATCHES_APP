@@ -660,6 +660,7 @@ function showIssues(issues){
 }
 
 function needsQuote(v){ return /[",\r\n]/.test(String(v)); }
+
 function csvForBatch(batch){
   const lines = [EXPORT_HEADERS.join(',')];
   batch.lines.forEach(l=>{
@@ -668,10 +669,12 @@ function csvForBatch(batch){
       canonUPC(l.upc),
       l.promoPrice ?? '',
       l.promoQty || 1,
-      l.startDate || '',
-      l.endDate || ''
+      toUSDate(l.startDate || ''),
+      toUSDate(l.endDate || '')
     ];
-    lines.push(row.map(v=> needsQuote(v)?`"${String(v).replace(/"/g,'""')}"`:v).join(','));
+    lines.push(
+      row.map(v => needsQuote(v) ? `"${String(v).replace(/"/g,'""')}"` : v).join(',')
+    );
   });
   return lines.join('\r\n');
 }
@@ -705,6 +708,15 @@ els.lineFilter.addEventListener('input', renderLines);
 /* ---------- Helpers ---------- */
 function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
 function escapeAttr(s){ return escapeHtml(s); }
+
+// Convert 'YYYY-MM-DD' → 'MM/DD/YYYY' for CSV export
+const DATE_ISO_RE = /^\d{4}-\d{2}-\d{2}$/;
+function toUSDate(s){
+  if (!s) return '';
+  if (!DATE_ISO_RE.test(s)) return s;         // leave non-ISO alone
+  const [y, m, d] = s.split('-');
+  return `${m}/${d}/${y}`;
+}
 
 /* ---------- Init ---------- */
 async function init(){
