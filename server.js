@@ -51,6 +51,17 @@ app.get('/data/master_items.json', (_req,res) => {
   res.sendFile(MASTER_JSON_PATH);
 });
 
+app.get('/api/batches/:id', (req,res)=>{
+  try {
+    const batches = readJSON(BATCHES_PATH);
+    const found = batches.find(b=>b.id===req.params.id);
+    if(!found) return res.status(404).json({error:'Not found'});
+    res.json(found);
+  } catch(e){
+    res.status(500).json({error:e.message});
+  }
+});
+
 //  ➜ single‑item look‑up (used by batch validator if you want)
 app.get('/api/item/:upc', (req,res)=>{
   const code = normalizeUPC(req.params.upc||'');
@@ -194,3 +205,4 @@ app.get(['/sales_batches','/sales_batches.html'], (_req,res)=>
 );
 
 app.listen(PORT, ()=>console.log(`Price Change Batch Builder running on :${PORT}`));
+
