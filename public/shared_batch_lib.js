@@ -49,20 +49,37 @@ export function toast(msg, type='info'){
   }, 3200);
 }
 
+function normalizeDate(maybeDateStr){
+  if(!maybeDateStr) return '';
+  // assume incoming like "11/02/2025" or "11/2/2025"
+  const parts = maybeDateStr.split('/');
+  if(parts.length !== 3) return maybeDateStr; // fall back if weird
+  let [m,d,y] = parts;
+  // strip leading zeros from month/day
+  m = String(parseInt(m,10));
+  d = String(parseInt(d,10));
+  return `${m}/${d}/${y}`;
+}
+
 /** CSV export given a batch object (must already be validated externally) */
 export function exportCsvFromBatch(batch){
   const header = 'Record Type,UPC,Promo_Price,Promo_Qty,Start_Date,End_Date';
   const rows = batch.lines.map(l=>{
     const promoQty = !l.promoQty || l.promoQty<1 ? 1 : l.promoQty;
+
+    const start = normalizeDate(l.startDate || '');
+    const end   = normalizeDate(l.endDate || '');
+
     const fields = [
       l.recordType || '',
       l.upc || '',
       l.promoPrice != null ? String(l.promoPrice) : '',
       promoQty,
-      l.startDate || '',
-      l.endDate || ''
+      start,
+      end
     ];
     return fields.join(',');
   });
-  return [header, ...rows].join('\r\n');
+  return [header, ...rows].join('\r\n') + '\r\n';
 }
+
