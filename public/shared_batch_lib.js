@@ -2,27 +2,58 @@
 
 export const LS_KEY = 'priceChangeBatches_v1';
 
-export function loadAllBatches(){
-  try {
-    return JSON.parse(localStorage.getItem(LS_KEY) || '[]');
-  } catch {
+export async function loadAllBatches(){
+  const res = await fetch('/api/batches', { cache: 'no-store' });
+  if (!res.ok) {
+    console.error('Failed to load batches', res.status);
     return [];
   }
+  return await res.json();
 }
 
 export function saveAllBatches(arr){
   localStorage.setItem(LS_KEY, JSON.stringify(arr));
 }
 
-export function findBatch(id){
-  return loadAllBatches().find(b=>b.id===id);
+export async function findBatch(id){
+  const res = await fetch(`/api/batches/${encodeURIComponent(id)}`, {
+    cache: 'no-store'
+  });
+  if(res.status === 404) return null;
+  if(!res.ok){
+    console.error('Failed to fetch batch', id, res.status);
+    return null;
+  }
+  return await res.json();
 }
 
-export function upsertBatch(batch){
-  const all = loadAllBatches();
-  const i = all.findIndex(b=>b.id===batch.id);
-  if(i===-1) all.push(batch); else all[i]=batch;
-  saveAllBatches(all);
+export async function upsertBatch(batch){
+  // batch.id should already exist (you’re using makeId() for that)
+  const method = 'PUT';
+  const res = await fetch(`/api/batches/${encodeURIComponent(batch.id)}`, {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(batch),
+  });
+
+  if (res.status === 404) {
+    // didn't exist yet -> create
+    const createRes = await fetch('/api/batches', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(batch),
+    });
+    if(!createRes.ok){
+      console.error('Failed to create batch', await createRes.text());
+    }
+    return createRes.ok;
+  }
+
+  if(!res.ok){
+    console.error('Failed to update batch', await res.text());
+    return false;
+  }
+  return true;
 }
 
 export function makeId(){
@@ -82,4 +113,5 @@ export function exportCsvFromBatch(batch){
   });
   return [header, ...rows].join('\r\n') + '\r\n';
 }
+
 
