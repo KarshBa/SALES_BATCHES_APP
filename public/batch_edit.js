@@ -33,7 +33,6 @@ async function hydrateFromServer(){
     const map = new Map(batches.map(b=>[b.id,b]));   // local first
     remote.forEach(b => map.set(b.id, b));           // overwrite/insert
     batches = [...map.values()];
-    saveToLocal();
   }catch(e){
     console.warn('Could not hydrate from server', e);
   }
@@ -257,9 +256,10 @@ function scheduleSave(b){
       b.updatedAt = new Date().toISOString();
       syncNameWithDateRange(b);
       await saveBatch(b);
+      currentBatch = await fetchBatch(currentBatch.id);
+      renderLines();
       toast('Saved','success');
       updateStatus();
-      await saveBatch(b);         // server is truth
     }catch(e){
       console.warn(e);
       toast('Save failed (server)', 'error');
@@ -777,6 +777,8 @@ document.addEventListener('keydown', e=>{
           b.updatedAt = new Date().toISOString();
           syncNameWithDateRange(b);
           await saveBatch(b);
+          currentBatch = await fetchBatch(currentBatch.id);
+          renderLines();
           toast('Saved','success');
           updateStatus();
         }catch(err){
