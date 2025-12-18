@@ -82,14 +82,24 @@ export function toast(msg, type='info'){
 
 function normalizeDate(maybeDateStr){
   if(!maybeDateStr) return '';
-  // assume incoming like "11/02/2025" or "11/2/2025"
-  const parts = maybeDateStr.split('/');
-  if(parts.length !== 3) return maybeDateStr; // fall back if weird
-  let [m,d,y] = parts;
-  // strip leading zeros from month/day
-  m = String(parseInt(m,10));
-  d = String(parseInt(d,10));
-  return `${m}/${d}/${y}`;
+  const s = String(maybeDateStr).trim();
+
+  // ISO -> M/D/YYYY
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    const [y, m, d] = s.split('-');
+    return `${parseInt(m,10)}/${parseInt(d,10)}/${y}`;
+  }
+
+  // M/D/YYYY or MM/DD/YYYY -> M/D/YYYY
+  const parts = s.split('/');
+  if(parts.length === 3){
+    let [m,d,y] = parts;
+    m = String(parseInt(m,10));
+    d = String(parseInt(d,10));
+    return `${m}/${d}/${y}`;
+  }
+
+  return s;
 }
 
 /** CSV export given a batch object (must already be validated externally) */
@@ -113,5 +123,6 @@ export function exportCsvFromBatch(batch){
   });
   return [header, ...rows].join('\r\n') + '\r\n';
 }
+
 
 
