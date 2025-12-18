@@ -16,6 +16,7 @@ if(!initialBatchId){
 }
 
 let batches = [];
+let currentBatch = null;
 let currentBatchId = initialBatchId;
 let masterItems = null;
 let masterLoaded = false;
@@ -213,7 +214,7 @@ function saveToLocal(){
 }
 
 function getCurrentBatch(){
-  return batches.find(b=>b.id === currentBatchId);
+  return currentBatch;
 }
 
 function blankLine(){
@@ -253,11 +254,42 @@ async function saveRemote(batch){
 function scheduleSave(b){
   if(saveTimer) clearTimeout(saveTimer);
   saveTimer = setTimeout(async ()=>{
-    b.updatedAt = new Date().toISOString();
-    saveToLocal();
-    updateStatus();
-    await saveRemote(b);
+    try{
+      b.updatedAt = new Date().toISOString();
+      syncNameWithDateRange(b);   // ensure name stays in sync before save
+      updateStatus();
+      await saveBatch(b);         // server is truth
+    }catch(e){
+      console.warn(e);
+      toast('Save failed (server)', 'error');
+    }
   }, AUTO_SAVE_DEBOUNCE);
+}
+
+async function fetchBatch(id){
+  const r = await fetch(`/api/batches/${encodeURIComponent(id)}`, { cache:'no-store' });
+  if(r.status === 404) return null;
+  if(!r.ok) throw new Error(`Failed to fetch batch: ${r.status}`);
+  return await r.json();
+}
+
+async function saveBatch(batch){
+  const r = await fetch(`/api/batches/${encodeURIComponent(batch.id)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(batch),
+  });
+  if(r.status === 404){
+    // if it doesn't exist yet, create it
+    const cr = await fetch('/api/batches', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(batch)
+    });
+    if(!cr.ok) throw new Error(`Create failed: ${cr.status}`);
+    return;
+  }
+  if(!r.ok) throw new Error(`Save failed: ${r.status}`);
 }
 
 /* ---------- Master List ---------- */
@@ -702,26 +734,32 @@ function escapeAttr(s){ return escapeHtml(s); }
 
 /* ---------- Init ---------- */
 async function init(){
-  loadFromLocal();
-  await hydrateFromServer();  // merge remote → local
-  
-  let batch = getCurrentBatch();
-  if(!batch){
-    // fallback: create a blank one if deep link invalid
-    batch = { id: currentBatchId || uuidv4(),
-              name: 'Unnamed',
-              lines: [ blankLine() ],          
-              updatedAt: new Date().toISOString() };
-    batches.push(batch);
-    await saveRemote(batch);
+  currentBatch = await fetchBatch(currentBatchId);
+
+  if(!currentBatch){
+    // create new if deep link invalid
+    currentBatch = {
+      id: currentBatchId || uuidv4(),
+      name: 'Unnamed',
+      lines: [ blankLine() ],
+      updatedAt: new Date().toISOString()
+    };
+    // create on server immediately
+    await fetch('/api/batches', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(currentBatch)
+    });
   }
-  
-  const oldName = batch.name;
-  syncNameWithDateRange(batch);
-  if (batch.name !== oldName) saveToLocal();
-  await saveRemote(batch);
-  
-  els.currentBatchLabel.textContent = batch.name;
+
+  // make sure derived name is saved to server once on load
+  const oldName = currentBatch.name;
+  syncNameWithDateRange(currentBatch);
+  if(currentBatch.name !== oldName){
+    await saveBatch(currentBatch);
+  }
+
+  els.currentBatchLabel.textContent = currentBatch.name;
   await loadMaster();
   renderLines();
 }
