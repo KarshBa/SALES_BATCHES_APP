@@ -127,9 +127,15 @@
 
   <div style="display:flex; gap:.5rem; align-items:center;">
     <input id="batchSearch" type="search" placeholder="Search batch names..." style="flex:1 1 auto;" />
-    <button id="btnExportSelected" class="secondary" disabled title="Export selected batches to CSV">
-      Export Selected
-    </button>
+
+<label style="display:flex; align-items:center; gap:.35rem; font-size:.8rem; color:#444; white-space:nowrap;">
+  <input type="checkbox" id="chkShowOld" />
+  Show Old Batches
+</label>
+
+<button id="btnExportSelected" class="secondary" disabled title="Export selected batches to CSV">
+  Export Selected
+</button>
   </div>
 </div>
       <div class="batch-create">
@@ -183,6 +189,7 @@
 <script src="https://item-list-handler.onrender.com/shared/nav.js?v=1.0.0"></script>
 </body>
 </html>
+
 
 
 
