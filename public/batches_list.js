@@ -1,10 +1,12 @@
 /* batches_list.js – list / management page */
+import { exportCsvFromBatch } from './shared_batch_lib.js';
 
 const LS_KEY = 'priceChangeBatches_v1';
-const EXPORT_HEADERS = ['Record Type','UPC','Promo_Price','Promo_Qty','Start_Date','End_Date'];
 const REMOTE_BASE = '/api/batches';
 
 let batches = [];
+
+const btnExportSelected = document.getElementById('btnExportSelected');
 
 const els = {
   tbody: document.getElementById('batchesTbody'),
@@ -65,6 +67,8 @@ function saveLocal(){
   localStorage.setItem(LS_KEY, JSON.stringify(batches));
 }
 
+
+
 /* ---------- Remote helpers ---------- */
 async function hydrateFromServer(){
   try{
@@ -115,6 +119,40 @@ function nextDuplicateName(name){
   return base+'_COPY'+(n>2?`_${n}`:'');
 }
 
+function downloadCSV(text, filename){
+  const blob = new Blob([text], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function getSelectedBatchIds(){
+  // assumes each row checkbox has data-id="<batchId>"
+  return [...document.querySelectorAll('input.batch-check:checked')]
+    .map(cb => cb.dataset.id)
+    .filter(Boolean);
+}
+
+function updateBulkButtons(){
+  const n = getSelectedBatchIds().length;
+
+  if (btnExportSelected){
+    btnExportSelected.disabled = (n === 0);
+    btnExportSelected.textContent = n ? `Export Selected (${n})` : 'Export Selected';
+  }
+
+  const btnDelete = document.getElementById('btnDeleteSelected');
+  if (btnDelete) btnDelete.disabled = (n === 0);
+}
+
+document.addEventListener('change', (e) => {
+  if (e.target && e.target.matches('input.batch-check, #chkAll')){
+    updateBulkButtons();
+  }
+});
+
 /* ---------- CRUD ---------- */
 async function createBatch(name){
   if(!name) { toast('Enter a name','error'); return null; }
@@ -163,25 +201,9 @@ async function deleteSelected(ids){
 function quickExport(id){
   const b = findBatch(id);
   if(!b) return;
-  // Simple validation: skip lines missing recordType or UPC
-  const header = EXPORT_HEADERS.join(',');
-  const rows = b.lines
-    .filter(l => l.recordType && l.upc)
-    .map(l => [
-      l.recordType,
-      l.upc,
-      l.promoPrice ?? '',
-      l.promoQty || 1,
-      l.startDate || '',
-      l.endDate || ''
-    ].join(','));
-  const csv = [header, ...rows].join('\r\n');
-  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `${b.name}_price_batch.csv`;
-  a.click();
-  URL.revokeObjectURL(a.href);
+  const csv = exportCsvFromBatch(b);
+  const safeName = String(b.name || id).replace(/[^\w\-]+/g, '_');
+  downloadCSV(csv, `${safeName}_price_batch.csv`);
   toast('Exported','success');
 }
 
@@ -196,7 +218,7 @@ function render(){
     shown++;
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td><input type="checkbox" class="rowchk" data-id="${b.id}"></td>
+      <td><input type="checkbox" class="batch-check" data-id="${b.id}"></td>
       <td><button class="link-btn open" data-id="${b.id}" title="Open">${escapeHtml(b.name)}</button></td>
       <td>${escapeHtml(formatTime(b.updatedAt))}</td>
       <td>${b.lines.length}</td>
@@ -215,6 +237,7 @@ function render(){
   }
   updateSummary();
   updateBulkDeleteState();
+  updateBulkButtons();
 }
 
 function updateSummary(){
@@ -222,7 +245,7 @@ function updateSummary(){
 }
 
 function selectedIds(){
-  return [...document.querySelectorAll('.rowchk:checked')].map(c=>c.dataset.id);
+  return getSelectedBatchIds(); // reuse the new helper
 }
 function updateBulkDeleteState(){
   els.delSelected.disabled = selectedIds().length === 0;
@@ -251,13 +274,14 @@ els.search.addEventListener('input', render);
 
 els.chkAll.addEventListener('change', ()=>{
   const on = els.chkAll.checked;
-  document.querySelectorAll('.rowchk').forEach(c=> c.checked = on);
-  updateBulkDeleteState();
+  document.querySelectorAll('input.batch-check').forEach(c => c.checked = on);
+  updateBulkButtons();
 });
 
 els.delSelected.addEventListener('click', async ()=>{
   await deleteSelected(selectedIds());
   els.chkAll.checked = false;
+  updateBulkButtons();
 });
 
 /* delegate row actions */
@@ -281,10 +305,34 @@ els.tbody.addEventListener('click', async e=>{
 });
 
 els.tbody.addEventListener('change', e=>{
-  if(e.target.classList.contains('rowchk')){
-    updateBulkDeleteState();
+  if (e.target.classList.contains('batch-check')){
+  updateBulkButtons();
   }
 });
+
+if (btnExportSelected){
+  btnExportSelected.addEventListener('click', async () => {
+    const ids = getSelectedBatchIds();
+    if (!ids.length) return;
+
+    const byId = new Map((batches || []).map(b => [b.id, b]));
+    let exported = 0;
+
+    for (const id of ids){
+      const batch = byId.get(id);
+      if (!batch) continue;
+
+      const csv = exportCsvFromBatch(batch);
+      const safeName = String(batch.name || id).replace(/[^\w\-]+/g, '_');
+      downloadCSV(csv, `${safeName}_price_batch.csv`);
+
+      exported++;
+      await new Promise(r => setTimeout(r, 120));
+    }
+
+    toast(`Exported ${exported} batch${exported===1?'':'es'}`, 'success');
+  });
+}
 
 /* ---------- Create‑from‑List flow ---------- */
 document.getElementById('btnCreateFromList').addEventListener('click', async ()=>{
@@ -355,3 +403,4 @@ window.addEventListener('pageshow', async () => {
   await hydrateFromServer();
   render();
 });
+
