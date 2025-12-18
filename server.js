@@ -11,7 +11,7 @@ const __dirname  = path.dirname(__filename);
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
-const DATA_DIR         = path.join(__dirname, 'data');
+const DATA_DIR     = process.env.DATA_DIR || path.join(__dirname, 'data');
 const BATCHES_PATH     = path.join(DATA_DIR, 'batches.json');
 
 // raw CSV copy lives alongside JSON so you can peek at it if needed
@@ -205,4 +205,5 @@ app.get(['/sales_batches','/sales_batches.html'], (_req,res)=>
 );
 
 app.listen(PORT, ()=>console.log(`Price Change Batch Builder running on :${PORT}`));
+
 
