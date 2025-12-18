@@ -143,10 +143,11 @@ function roundPromo(p){
   return (newCents / 100).toFixed(2);
 }
 
-const DATE_SUFFIX_RE = /(?:[_\s-])?\d{4}-\d{2}-\d{2}$/;
+// strips either "_YYYY-MM-DD" or "_YYYY-MM-DD--YYYY-MM-DD" from the end
+const DATE_RANGE_SUFFIX_RE = /(?:[_\s-])?\d{4}-\d{2}-\d{2}(?:--\d{4}-\d{2}-\d{2})?$/;
 
 function stripDateSuffix(name){
-  return name.replace(DATE_SUFFIX_RE, '');
+  return String(name || '').replace(DATE_RANGE_SUFFIX_RE, '').trim();
 }
 
 function oldestStartDate(batch){
@@ -154,15 +155,24 @@ function oldestStartDate(batch){
   return arr[0] || '';
 }
 
-function syncNameWithOldestDate(batch){
-  const base = stripDateSuffix(batch.name);
-  const oldest = oldestStartDate(batch);
-  const newName = oldest ? `${base}_${oldest}` : base;
+function newestEndDate(batch){
+  const arr = batch.lines.map(l => l.endDate).filter(Boolean).sort();
+  return arr.length ? arr[arr.length - 1] : '';
+}
+
+function syncNameWithDateRange(batch){
+  const base   = stripDateSuffix(batch.name);
+  const start  = oldestStartDate(batch);
+  const end    = newestEndDate(batch);
+
+  let newName = base;
+  if (start && end) newName = `${base}_${start}--${end}`;
+  else if (start)   newName = `${base}_${start}`; // if no end yet
+
   if (batch.name !== newName){
     batch.name = newName;
     els.currentBatchLabel.textContent = newName;
-    saveToLocal();               // persist
-    // also update the title in the list page when you go back
+    saveToLocal();
   }
 }
 
@@ -416,11 +426,11 @@ els.linesTbody.addEventListener('input', e=>{
   else if(e.target.classList.contains('cell-promoQty')) line.promoQty = e.target.value;
   else if(e.target.classList.contains('cell-startDate')){
     line.startDate = e.target.value;
-    syncNameWithOldestDate(b);
+    syncNameWithDateRange(b);
   }
   else if(e.target.classList.contains('cell-endDate')){
     line.endDate = e.target.value;
-    syncNameWithOldestDate(b);
+    syncNameWithDateRange(b);
   }
   scheduleSave(b);
 
@@ -443,6 +453,7 @@ els.linesTbody.addEventListener('click', e=>{
     if(confirm('Delete row?')){
       const b = getCurrentBatch();
       b.lines.splice(idx,1);
+      syncNameWithDateRange(b);
       scheduleSave(b);
       renderLines();
     }
@@ -488,7 +499,7 @@ els.bulkStartDate.addEventListener('change', () => {
   if(!v) return;
   const b = getCurrentBatch();
   b.lines.forEach(l => l.startDate = v);
-  syncNameWithOldestDate(b);
+  syncNameWithDateRange(b);
   scheduleSave(b); renderLines();
 });
 
@@ -497,7 +508,7 @@ els.bulkEndDate.addEventListener('change', () => {
   if(!v) return;
   const b = getCurrentBatch();
   b.lines.forEach(l => l.endDate = v);
-  syncNameWithOldestDate(b);
+  syncNameWithDateRange(b);
   scheduleSave(b); renderLines();
 });
 
@@ -706,7 +717,7 @@ async function init(){
   }
   
   const oldName = batch.name;
-  syncNameWithOldestDate(batch);
+  syncNameWithDateRange(batch);
   if (batch.name !== oldName) saveToLocal();
   
   els.currentBatchLabel.textContent = batch.name;
@@ -756,7 +767,7 @@ if(els.btnRefreshMaster){
         const b = getCurrentBatch();
         if(masterItems){
           b.lines.forEach(l=>{
-            const itm = masterItems.get(l.upc);
+            const itm = masterItems.get(canonUPC(l.upc));
             if(itm){
               l.brand = itm.brand;
               l.description = itm.description;
