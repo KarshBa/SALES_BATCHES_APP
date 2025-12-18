@@ -58,6 +58,7 @@ function toast(msg, type='info', ms=3500){
 }
 
 /* ---------- Storage ---------- */
+/* ---- 
 function loadLocal(){
   try{
     const raw = localStorage.getItem(LS_KEY);
@@ -67,20 +68,13 @@ function loadLocal(){
 function saveLocal(){
   localStorage.setItem(LS_KEY, JSON.stringify(batches));
 }
-
-
+----- */
 
 /* ---------- Remote helpers ---------- */
-async function hydrateFromServer(){
-  try{
-    const r = await fetch(REMOTE_BASE, { cache:'no-store' });
-    if(!r.ok) return;
-    const remote = await r.json();            // [{id,...}]
-    const map = new Map(batches.map(b=>[b.id,b]));
-    remote.forEach(b => map.set(b.id, b));    // server wins
-    batches = [...map.values()];
-    saveLocal();
-  }catch(e){ console.warn('hydrateFromServer failed', e); }
+async function loadFromServer(){
+  const r = await fetch(REMOTE_BASE, { cache:'no-store' });
+  if(!r.ok) throw new Error(`Failed to load batches: ${r.status}`);
+  batches = await r.json(); // server is truth
 }
 
 async function createRemote(batch){
@@ -182,18 +176,19 @@ document.addEventListener('change', (e) => {
 /* ---------- CRUD ---------- */
 async function createBatch(name){
   if(!name) { toast('Enter a name','error'); return null; }
-  if(batches.some(b=>b.name===name)){ toast('Name already exists','error'); return null; }
   const id = crypto.randomUUID?.() || Math.random().toString(36).slice(2);
-  const lines = [
-    { recordType:'', upc:'', brand:'', description:'', regPrice:'', promoPrice:'', promoQty:'', startDate:'', endDate:'' }
-  ];
-  const batch = { id, name, lines, updatedAt: new Date().toISOString() };
-  batches.push(batch);
-  saveLocal();
-  await createRemote(batch);          // <<< push to disk
+
+  const batch = {
+    id, name,
+    lines: [{ recordType:'', upc:'', brand:'', description:'', regPrice:'', promoPrice:'', promoQty:'', startDate:'', endDate:'' }],
+    updatedAt: new Date().toISOString()
+  };
+
+  await createRemote(batch);
+  await loadFromServer();
   toast('Batch created','success');
   render();
-  return batch;
+  return batches.find(b=>b.id===id) || batch;
 }
 
 async function duplicateBatch(id){
@@ -428,8 +423,12 @@ document.getElementById('confirmPickList').addEventListener('click', async ()=>{
 
 /* ---------- Init ---------- */
 async function init(){
-  loadLocal();               // fast local cache
-  await hydrateFromServer(); // then disk state
+  try{
+    await loadFromServer();
+  }catch(e){
+    toast('Could not load batches from server', 'error');
+    batches = []; // or keep old in-memory
+  }
   render();
 }
 init();
@@ -442,5 +441,6 @@ window.addEventListener('pageshow', async () => {
   await hydrateFromServer();
   render();
 });
+
 
 
