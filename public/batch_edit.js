@@ -772,10 +772,18 @@ document.addEventListener('keydown', e=>{
     e.preventDefault();
     const b = getCurrentBatch();
     if(b){
-      b.updatedAt = new Date().toISOString();
-      saveToLocal();
-      toast('Saved','success');
-      updateStatus();
+      (async ()=>{
+        try{
+          b.updatedAt = new Date().toISOString();
+          syncNameWithDateRange(b);
+          await saveBatch(b);
+          toast('Saved','success');
+          updateStatus();
+        }catch(err){
+          console.warn(err);
+          toast('Save failed (server)','error');
+        }
+      })();
     }
   } else if(e.ctrlKey && e.key.toLowerCase()==='e'){
     e.preventDefault();
