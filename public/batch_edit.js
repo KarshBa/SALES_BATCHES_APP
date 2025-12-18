@@ -719,6 +719,7 @@ async function init(){
   const oldName = batch.name;
   syncNameWithDateRange(batch);
   if (batch.name !== oldName) saveToLocal();
+  await saveRemote(batch);
   
   els.currentBatchLabel.textContent = batch.name;
   await loadMaster();
