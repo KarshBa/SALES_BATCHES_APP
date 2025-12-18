@@ -171,9 +171,8 @@ function syncNameWithDateRange(batch){
   else if (start)   newName = `${base}_${start}`; // if no end yet
 
   if (batch.name !== newName){
-    batch.name = newName;
-    els.currentBatchLabel.textContent = newName;
-    saveToLocal();
+  batch.name = newName;
+  els.currentBatchLabel.textContent = newName;
   }
 }
 
@@ -256,7 +255,9 @@ function scheduleSave(b){
   saveTimer = setTimeout(async ()=>{
     try{
       b.updatedAt = new Date().toISOString();
-      syncNameWithDateRange(b);   // ensure name stays in sync before save
+      syncNameWithDateRange(b);
+      await saveBatch(b);
+      toast('Saved','success');
       updateStatus();
       await saveBatch(b);         // server is truth
     }catch(e){
