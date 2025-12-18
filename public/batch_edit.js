@@ -676,7 +676,7 @@ function csvForBatch(batch){
       row.map(v => needsQuote(v) ? `"${String(v).replace(/"/g,'""')}"` : v).join(',')
     );
   });
-  return lines.join('\r\n');
+  return lines.join('\r\n') + '\r\n';
 }
 
 function downloadCSV(text, filename){
