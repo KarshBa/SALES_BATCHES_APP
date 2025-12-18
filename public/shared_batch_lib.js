@@ -80,6 +80,23 @@ export function toast(msg, type='info'){
   }, 3200);
 }
 
+function canonUPC(raw){
+  const d = String(raw || '').replace(/\D/g,'');
+  if(!d) return '';
+  if(d.length === 12) return ('0' + d.slice(0,11)).padStart(13,'0');
+  return d.padStart(13,'0');
+}
+
+function csvCell(v){
+  const s = String(v ?? '');
+  return /[",\r\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s;
+}
+
+function normalizeQty(q){
+  const n = parseInt(q, 10);
+  return Number.isFinite(n) && n >= 1 ? n : 1;
+}
+
 function normalizeDate(maybeDateStr){
   if(!maybeDateStr) return '';
   const s = String(maybeDateStr).trim();
@@ -105,24 +122,19 @@ function normalizeDate(maybeDateStr){
 /** CSV export given a batch object (must already be validated externally) */
 export function exportCsvFromBatch(batch){
   const header = 'Record Type,UPC,Promo_Price,Promo_Qty,Start_Date,End_Date';
-  const rows = batch.lines.map(l=>{
-    const promoQty = !l.promoQty || l.promoQty<1 ? 1 : l.promoQty;
 
-    const start = normalizeDate(l.startDate || '');
-    const end   = normalizeDate(l.endDate || '');
-
+  const rows = (batch?.lines || []).map(l=>{
     const fields = [
-      l.recordType || '',
-      l.upc || '',
-      l.promoPrice != null ? String(l.promoPrice) : '',
-      promoQty,
-      start,
-      end
+      l?.recordType || '',
+      canonUPC(l?.upc || ''),
+      (l?.promoPrice != null && l?.promoPrice !== '') ? String(l.promoPrice) : '',
+      normalizeQty(l?.promoQty),
+      normalizeDate(l?.startDate || ''),
+      normalizeDate(l?.endDate || '')
     ];
-    return fields.join(',');
+
+    return fields.map(csvCell).join(',');
   });
+
   return [header, ...rows].join('\r\n') + '\r\n';
 }
-
-
-
