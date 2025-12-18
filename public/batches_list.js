@@ -57,6 +57,82 @@ function toast(msg, type='info', ms=3500){
   setTimeout(()=>t.remove(), ms);
 }
 
+const LS_KEY = 'priceChangeBatches_v1'; // already in your file
+
+async function importLocalCacheToServer(){
+  // 1) read local cache
+  let local = [];
+  try{
+    local = JSON.parse(localStorage.getItem(LS_KEY) || '[]') || [];
+  }catch{
+    local = [];
+  }
+  if(!Array.isArray(local) || local.length === 0){
+    toast('No local cached batches found.', 'error');
+    return;
+  }
+
+  // 2) load server batches and build id set
+  let server = [];
+  try{
+    const r = await fetch('/api/batches', { cache:'no-store' });
+    if(!r.ok) throw new Error(r.status);
+    server = await r.json();
+  }catch(e){
+    toast('Could not read server batches.', 'error');
+    return;
+  }
+  const serverIds = new Set(server.map(b => b.id));
+
+  // 3) push each local batch up
+  let created = 0, updated = 0, failed = 0;
+
+  for (const b of local){
+    if(!b || !b.id) { failed++; continue; }
+
+    // keep server-friendly shape
+    if(!Array.isArray(b.lines)) b.lines = [];
+    if(!b.updatedAt) b.updatedAt = new Date().toISOString();
+
+    try{
+      if (serverIds.has(b.id)){
+        // update existing
+        const r = await fetch(`/api/batches/${encodeURIComponent(b.id)}`, {
+          method: 'PUT',
+          headers: { 'Content-Type':'application/json' },
+          body: JSON.stringify(b)
+        });
+        if(!r.ok) throw new Error(r.status);
+        updated++;
+      } else {
+        // create new
+        const r = await fetch('/api/batches', {
+          method: 'POST',
+          headers: { 'Content-Type':'application/json' },
+          body: JSON.stringify(b)
+        });
+        if(!r.ok) throw new Error(r.status);
+        serverIds.add(b.id);
+        created++;
+      }
+    }catch(err){
+      console.warn('Import failed for batch', b.id, err);
+      failed++;
+    }
+
+    // tiny delay prevents hammering on slow hosts
+    await new Promise(r => setTimeout(r, 40));
+  }
+
+  toast(`Import complete: ${created} created, ${updated} updated, ${failed} failed.`, failed ? 'error' : 'success', 6000);
+
+  // 4) refresh UI from server truth
+  try{
+    await loadFromServer();
+    render();
+  }catch{}
+}
+
 /* ---------- Storage ---------- */
 /* ---- 
 function loadLocal(){
@@ -165,6 +241,14 @@ function updateBulkButtons(){
 
   const btnDelete = document.getElementById('btnDeleteSelected');
   if (btnDelete) btnDelete.disabled = (n === 0);
+}
+
+const btnImportLocal = document.getElementById('btnImportLocal');
+if (btnImportLocal){
+  btnImportLocal.addEventListener('click', async ()=>{
+    if(!confirm('Import ALL locally cached batches to the server?')) return;
+    await importLocalCacheToServer();
+  });
 }
 
 document.addEventListener('change', (e) => {
@@ -444,6 +528,7 @@ window.addEventListener('pageshow', async () => {
   }
   render();
 });
+
 
 
 
