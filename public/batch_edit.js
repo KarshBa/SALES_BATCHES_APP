@@ -1,11 +1,11 @@
 /* batch_edit.js  – editor-only script */
 
 import { v4 as uuidv4 } from 'https://cdn.jsdelivr.net/npm/uuid@9.0.1/+esm';
+import { exportCsvFromBatch } from './shared_batch_lib.js';
 
 const LS_KEY = 'priceChangeBatches_v1';
 const MASTER_URL = '/data/master_items.json';
 const RECORD_TYPES = ['SALE','TPR','INSTORE','REG'];
-const EXPORT_HEADERS = ['Record Type','UPC','Promo_Price','Promo_Qty','Start_Date','End_Date'];
 const AUTO_SAVE_DEBOUNCE = 500;
 
 const params = new URLSearchParams(location.search);
@@ -659,26 +659,6 @@ function showIssues(issues){
   openModal(modalIssues);
 }
 
-function needsQuote(v){ return /[",\r\n]/.test(String(v)); }
-
-function csvForBatch(batch){
-  const lines = [EXPORT_HEADERS.join(',')];
-  batch.lines.forEach(l=>{
-    const row = [
-      l.recordType,
-      canonUPC(l.upc),
-      l.promoPrice ?? '',
-      l.promoQty || 1,
-      toUSDate(l.startDate || ''),
-      toUSDate(l.endDate || '')
-    ];
-    lines.push(
-      row.map(v => needsQuote(v) ? `"${String(v).replace(/"/g,'""')}"` : v).join(',')
-    );
-  });
-  return lines.join('\r\n') + '\r\n';
-}
-
 function downloadCSV(text, filename){
   const blob = new Blob([text], {type:'text/csv;charset=utf-8;'});
   const a = document.createElement('a');
@@ -694,7 +674,7 @@ els.btnExport.addEventListener('click', ()=>{
   const bad = collectValidation(b);
   if (bad.length) showIssues(bad);
 
-  const csv = csvForBatch(b);
+  const csv = exportCsvFromBatch(b);
   csvPreview.textContent = csv;
   downloadCSV(csv, `${b.name}_price_batch.csv`);
   openModal(modalCsvPreview);
@@ -708,15 +688,6 @@ els.lineFilter.addEventListener('input', renderLines);
 /* ---------- Helpers ---------- */
 function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
 function escapeAttr(s){ return escapeHtml(s); }
-
-// Convert 'YYYY-MM-DD' → 'MM/DD/YYYY' for CSV export
-const DATE_ISO_RE = /^\d{4}-\d{2}-\d{2}$/;
-function toUSDate(s){
-  if (!s) return '';
-  if (!DATE_ISO_RE.test(s)) return s;         // leave non-ISO alone
-  const [y, m, d] = s.split('-');
-  return `${m}/${d}/${y}`;
-}
 
 /* ---------- Init ---------- */
 async function init(){
