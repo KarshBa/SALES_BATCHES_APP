@@ -123,9 +123,15 @@
   <div class="card">
     <div class="top-bar">
       <div class="grow">
-        <label for="batchSearch">Filter</label>
-        <input id="batchSearch" type="search" placeholder="Search batch names..." />
-      </div>
+  <label for="batchSearch">Filter</label>
+
+  <div style="display:flex; gap:.5rem; align-items:center;">
+    <input id="batchSearch" type="search" placeholder="Search batch names..." style="flex:1 1 auto;" />
+    <button id="btnExportSelected" class="secondary" disabled title="Export selected batches to CSV">
+      Export Selected
+    </button>
+  </div>
+</div>
       <div class="batch-create">
         <div>
           <label for="newBatchName">New Batch Name</label>
@@ -177,5 +183,6 @@
 <script src="https://item-list-handler.onrender.com/shared/nav.js?v=1.0.0"></script>
 </body>
 </html>
+
 
 
