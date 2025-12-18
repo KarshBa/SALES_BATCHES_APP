@@ -11,6 +11,7 @@ const btnExportSelected = document.getElementById('btnExportSelected');
 const els = {
   tbody: document.getElementById('batchesTbody'),
   search: document.getElementById('batchSearch'),
+  showOld: document.getElementById('chkShowOld'),
   newName: document.getElementById('newBatchName'),
   createBtn: document.getElementById('btnCreateBatch'),
   chkAll: document.getElementById('chkAll'),
@@ -109,6 +110,31 @@ function escapeHtml(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<'
 function formatTime(ts){
   if(!ts) return '';
   try { return new Date(ts).toLocaleString(); } catch { return ts; }
+}
+
+function parseISODate(s){
+  if (!s) return null;
+  const t = String(s).trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(t)) return null; // only accept YYYY-MM-DD
+  const d = new Date(t + 'T00:00:00');
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function getOldestStartDate(batch){
+  const dates = (batch?.lines || [])
+    .map(l => parseISODate(l?.startDate))
+    .filter(Boolean)
+    .sort((a,b) => a - b);
+  return dates[0] || null;
+}
+
+function isBatchOld(batch, days=30){
+  const oldest = getOldestStartDate(batch);
+  if (!oldest) return false; // no date => treat as NOT old (keep visible)
+  const cutoff = new Date();
+  cutoff.setHours(0,0,0,0);
+  cutoff.setDate(cutoff.getDate() - days);
+  return oldest < cutoff;
 }
 
 function nextDuplicateName(name){
@@ -210,11 +236,20 @@ function quickExport(id){
 /* ---------- Render ---------- */
 function render(){
   const filter = els.search.value.trim().toLowerCase();
+  const showOld = !!els.showOld?.checked;
+  // Whenever the list is rebuilt, uncheck "Select All"
+  if (els.chkAll) els.chkAll.checked = false;
+
   els.tbody.innerHTML = '';
   const sorted = batches.slice().sort((a,b)=> (b.updatedAt||'').localeCompare(a.updatedAt||''));
   let shown = 0;
+
   sorted.forEach(b=>{
-    if(filter && !b.name.toLowerCase().includes(filter)) return;
+    if (filter && !b.name.toLowerCase().includes(filter)) return;
+
+    // hide "old" batches unless checkbox is on
+    if (!showOld && isBatchOld(b, 30)) return;
+
     shown++;
     const tr = document.createElement('tr');
     tr.innerHTML = `
@@ -334,6 +369,10 @@ if (btnExportSelected){
   });
 }
 
+if (els.showOld){
+  els.showOld.addEventListener('change', render);
+}
+
 /* ---------- Create‑from‑List flow ---------- */
 document.getElementById('btnCreateFromList').addEventListener('click', async ()=>{
   try{
@@ -403,4 +442,5 @@ window.addEventListener('pageshow', async () => {
   await hydrateFromServer();
   render();
 });
+
 
