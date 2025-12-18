@@ -194,21 +194,21 @@ async function createBatch(name){
 async function duplicateBatch(id){
   const original = findBatch(id);
   if(!original) return;
+
   const clone = structuredClone(original);
   clone.id = crypto.randomUUID?.() || Math.random().toString(36).slice(2);
   clone.name = nextDuplicateName(original.name);
   clone.updatedAt = new Date().toISOString();
-  batches.push(clone);
-  saveLocal();
+
   await createRemote(clone);
+  await loadFromServer();
   toast('Duplicated','success');
   render();
 }
 
 async function deleteBatch(id){
-  batches = batches.filter(b=>b.id !== id);
-  saveLocal();
   await deleteRemote(id);
+  await loadFromServer();
 }
 
 async function deleteSelected(ids){
@@ -411,8 +411,8 @@ document.getElementById('confirmPickList').addEventListener('click', async ()=>{
     if(!batch) return;
     batch.lines = lines;
     batch.updatedAt = new Date().toISOString();
-    saveLocal();
-    await updateRemote(batch); // <<< persist modified lines
+    await updateRemote(batch);
+    await loadFromServer();
 
    modalClose(modalPick);
     location.href = `sales_batches.html?batch=${batch.id}`;
@@ -437,10 +437,14 @@ init();
 /* Refresh list when you come back */
 /* ------------------------------ */
 window.addEventListener('pageshow', async () => {
-  loadLocal();
-  await hydrateFromServer();
+  try{
+    await loadFromServer();
+  }catch(e){
+    console.warn(e);
+  }
   render();
 });
+
 
 
 
