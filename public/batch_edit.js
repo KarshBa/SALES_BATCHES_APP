@@ -713,17 +713,18 @@ function downloadCSV(text, filename){
 }
 
 if (els.btnExport) {
-els.btnExport.addEventListener('click', ()=>{
-  const b   = getCurrentBatch();
-  const bad = collectValidation(b);
-  if (bad.length) showIssues(bad);
+  els.btnExport.addEventListener('click', () => {
+    const b   = getCurrentBatch();
+    const bad = collectValidation(b);
+    if (bad.length) {
+      showIssues(bad);
+      return; // optional: stop export if issues exist
+    }
 
-  const csv = exportCsvFromBatch(b);
-  csvPreview.textContent = csv;
-  downloadCSV(csv, `${b.name}_price_batch.csv`);
-  openModal(modalCsvPreview);
-  toast('Exported','success');
-});
+    const csv = exportCsvFromBatch(b);
+    downloadCSV(csv, `${b.name}_price_batch.csv`);
+    toast('Exported','success');
+  });
 }
 
 /* ---------- Filtering ---------- */
