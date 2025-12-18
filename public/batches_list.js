@@ -57,8 +57,6 @@ function toast(msg, type='info', ms=3500){
   setTimeout(()=>t.remove(), ms);
 }
 
-const LS_KEY = 'priceChangeBatches_v1'; // already in your file
-
 async function importLocalCacheToServer(){
   // 1) read local cache
   let local = [];
@@ -528,6 +526,7 @@ window.addEventListener('pageshow', async () => {
   }
   render();
 });
+
 
 
 
