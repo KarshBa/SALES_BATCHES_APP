@@ -4,6 +4,7 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>NCG Product Hierarchy</title>
+<link rel="stylesheet" href="https://item-list-handler.onrender.com/shared/nav.css?v=1.0.0">
 <style>
   :root {
     --bg:#f6f7f9; --card:#fff; --text:#1f2937; --muted:#6b7280;
@@ -12,9 +13,26 @@
   }
   *{box-sizing:border-box}
   body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
-  header{padding:18px 20px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,#ffffff, #fbfbfc)}
-  header h1{margin:0;font-size:20px;letter-spacing:.2px}
-  header p{margin:6px 0 0;color:var(--muted);font-size:13px}
+  
+  header{
+  padding:18px 20px;
+  border-bottom:1px solid var(--border);
+  background:#007934;
+  color:#fff;
+  text-align:center;
+  }
+  header h1{
+  margin:0;
+  font-size:30px;
+  letter-spacing:.2px;
+  color:#fff;
+  }
+  header p{
+  margin:6px 0 0;
+  color:#fff;
+  font-size:13px;
+  opacity:.92;
+  }
   main{max-width:1200px;margin:0 auto;padding:18px 14px 26px}
   .grid{display:grid;grid-template-columns:1fr;gap:14px}
   @media (min-width: 960px){.grid{grid-template-columns: 420px 1fr}}
@@ -428,5 +446,6 @@ els.btnCsv.addEventListener('click', () => {
 setOptions(els.dept, uniqueSorted(DATA.map(r => toKey(r['Dept ID'], r['DEPARTMENT']))), 'All departments');
 refresh();
 </script>
+<script src="https://item-list-handler.onrender.com/shared/nav.js?v=1.0.0"></script>
 </body>
 </html>
