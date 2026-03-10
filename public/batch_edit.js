@@ -92,6 +92,7 @@ function handleQuickUPC(){
     if(itm){
       line.brand       = itm.brand;
       line.description = itm.description;
+      line.byWeight = !!itm.scalable;
       line.regPrice    = itm.reg_price;
     }
     upsertLine(b, line);
@@ -122,6 +123,7 @@ function addItemToBatch(code){
   if (itm){
     line.brand       = itm.brand;
     line.description = itm.description;
+    line.byWeight = !!itm.scalable;
     line.regPrice    = itm.reg_price;
   }
 
@@ -216,7 +218,7 @@ function getCurrentBatch(){
 }
 
 function blankLine(){
-  return { recordType:'', upc:'', brand:'', description:'', regPrice:'', promoPrice:'', promoQty:'', startDate:'', endDate:'' };
+  return { recordType:'', upc:'', brand:'', description:'', byWeight:false, regPrice:'', promoPrice:'', promoQty:'', startDate:'', endDate:'' };
 }
 
 // ---- Remote persistence -------------------------
@@ -398,6 +400,7 @@ function renderLines(){
       <td><input class="cell-upc" value="${escapeAttr(ln.upc)}" inputmode="numeric" pattern="[0-9]*" /></td>
       <td class="ro brand">${escapeHtml(ln.brand)}</td>
       <td class="ro desc">${escapeHtml(ln.description)}</td>
+      <td class="ro byWeight">${ln.byWeight ? 'By weight' : ''}</td>
       <td class="ro regPrice">${ln.regPrice!==''?Number(ln.regPrice).toFixed(2):''}</td>
       <td><input class="cell-promoPrice" type="number" step="0.01" min="0" value="${escapeAttr(ln.promoPrice)}" /></td>
       <td><input class="cell-promoQty" type="number" min="1" value="${escapeAttr(ln.promoQty)}" /></td>
@@ -447,9 +450,11 @@ els.linesTbody.addEventListener('input', e=>{
       if(item){
         line.brand = item.brand;
         line.description = item.description;
+        line.byWeight = !!item.scalable;
         line.regPrice = item.reg_price;
       } else {
         line.brand = line.description = '';
+        line.byWeight = false;
         line.regPrice = '';
       }
     }
@@ -573,6 +578,7 @@ upcInput.addEventListener('keydown', e => {
       if (itm){
         ln.brand       = itm.brand;
         ln.description = itm.description;
+        ln.byWeight = !!itm.scalable;
         ln.regPrice    = itm.reg_price;
       }
       upsertLine(b, ln);
@@ -594,10 +600,12 @@ upcInput.addEventListener('keydown', e => {
       const line = firstEmptyLine(b) || blankLine();
       line.recordType = els.bulkRecordType.value || 'SALE';
       line.upc = upc.replace(/\D/g,'');
-      if(masterItems && masterItems.has(line.upc)){
-        const itm = masterItems.get(line.upc);
+      const key = canonUPC(line.upc);
+      if(masterItems && masterItems.has(key)){
+        const itm = masterItems.get(key);
         line.brand = itm.brand;
         line.description = itm.description;
+        line.byWeight = !!itm.scalable;
         line.regPrice = itm.reg_price;
       }
       upsertLine(b, line);
@@ -822,6 +830,7 @@ if(els.btnRefreshMaster){
             if(itm){
               l.brand = itm.brand;
               l.description = itm.description;
+              l.byWeight = !!itm.scalable;
               l.regPrice = itm.reg_price;
             }
           });
