@@ -148,7 +148,8 @@ function parseMasterCsv(csvText){
       upc,
       brand      : pick(r,['main item-brand','brand']),
       description: pick(r,['main item-description','description']),
-      reg_price  : parseFloat(pick(r,['price-regular-price','price','regular price'])) || 0
+      reg_price  : parseFloat(pick(r,['price-regular-price','price','regular price'])) || 0,
+      scalable   : String(pick(r, ['pos information-scalable'])).trim() === '1'
     });
   });
   return map;
@@ -205,5 +206,6 @@ app.get(['/sales_batches','/sales_batches.html'], (_req,res)=>
 );
 
 app.listen(PORT, ()=>console.log(`Price Change Batch Builder running on :${PORT}`));
+
 
 
