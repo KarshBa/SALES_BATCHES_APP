@@ -6,7 +6,7 @@ import { exportCsvFromBatch } from './shared_batch_lib.js';
 const LS_KEY = 'priceChangeBatches_v1';
 const MASTER_URL = '/data/master_items.json';
 const RECORD_TYPES = ['SALE','TPR','INSTORE','REG'];
-const AUTO_SAVE_DEBOUNCE = 500;
+const AUTO_SAVE_DEBOUNCE = 1500;
 
 const params = new URLSearchParams(location.search);
 const initialBatchId = params.get('batch');
@@ -258,10 +258,13 @@ function scheduleSave(b){
       b.updatedAt = new Date().toISOString();
       syncNameWithDateRange(b);
       await saveBatch(b);
-      currentBatch = await fetchBatch(currentBatch.id);
-      renderLines();
-      toast('Saved','success');
+
+      // Do not re-fetch + re-render during autosave.
+      // That interrupts typing by replacing the active input.
+      currentBatch = b;
+
       updateStatus();
+      toast('Saved','success');
     }catch(e){
       console.warn(e);
       toast('Save failed (server)', 'error');
@@ -786,10 +789,9 @@ document.addEventListener('keydown', e=>{
           b.updatedAt = new Date().toISOString();
           syncNameWithDateRange(b);
           await saveBatch(b);
-          currentBatch = await fetchBatch(currentBatch.id);
-          renderLines();
-          toast('Saved','success');
+          currentBatch = b;
           updateStatus();
+          toast('Saved','success');
         }catch(err){
           console.warn(err);
           toast('Save failed (server)','error');
