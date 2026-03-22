@@ -69,7 +69,6 @@
 <body>
 <header>
   <h1>NCG Product Hierarchy</h1>
-  <p>Browse departments → subdepartments → categories → subcategories.</p>
 </header>
 
 <main>
@@ -112,10 +111,10 @@
 
         <div class="actions">
           <button id="btnReset">Reset</button>
-          <button id="btnCsv" class="primary">Download filtered CSV</button>
+          <button id="btnCsv" class="primary">Download CSV</button>
         </div>
       </div>
-      <div class="foot">Tip: the chart shows counts for the next drill‑down level (e.g., choose a Department to chart its Subdepartments).</div>
+      <div class="foot">Tip: the chart shows counts for the next drill‑down level (e.g., choose a Department to show its Subdepartments).</div>
     </section>
 
     <section class="card">
@@ -343,7 +342,7 @@ function buildChart(rows) {
   const labels = items.map(x => x[0]);
   const values = items.map(x => x[1]);
 
-  els.chartHint.textContent = `Showing up to ${labels.length} ${dimLabel} values (count = number of subcategory rows in hierarchy).`;
+  els.chartHint.textContent = `Showing up to ${labels.length} ${dimLabel} values.`;
 
   const ctx = document.getElementById('chart');
   if (chart) chart.destroy();
